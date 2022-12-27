@@ -1,13 +1,13 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.jetbrains.kotlin.util.prefixIfNot
 
 plugins {
-    alias(libs.plugins.shadow)
     `maven-publish`
     `java-gradle-plugin`
-    alias(libs.plugins.kotlin)
-    id("com.gradle.plugin-publish") version "1.1.0"
+    alias(libs.plugins.shadow)
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.gradle.publish)
+    id(libs.plugins.kotlin.plugin.serialization.get().pluginId)
 }
 
 repositories {
@@ -15,131 +15,108 @@ repositories {
 }
 
 val shadowImplementation: Configuration by configurations.creating
-configurations["compileOnly"].extendsFrom(shadowImplementation)
-configurations["testImplementation"].extendsFrom(shadowImplementation)
+val compileAndTest: Configuration by configurations.creating
+configurations {
+    compileOnly.get().extendsFrom(shadowImplementation, compileAndTest)
+    testImplementation.get().extendsFrom(shadowImplementation, compileAndTest)
+}
 
+@Suppress("UnstableApiUsage")
 dependencies {
-
     shadowImplementation(libs.kotlin.stdlib)
     shadowImplementation(project(":slimjar"))
-    shadowImplementation("com.google.code.gson:gson:2.10")
+    shadowImplementation(libs.arrow.core)
     shadowImplementation(libs.kotlinx.coroutines)
+    shadowImplementation(libs.kotlinx.serialization.json)
+    shadowImplementation(libs.kotlinx.immutableCollections)
 
-    compileOnly(gradleApi())
-    compileOnly(gradleKotlinDsl())
-    compileOnly(libs.gradle.shadow)
+    compileAndTest(gradleApi())
+    compileAndTest(gradleKotlinDsl())
+    compileAndTest(libs.gradle.shadow)
+    compileAndTest(libs.gradle.kotlin.jvm)
+    compileAndTest(libs.gradle.kotlin.mpp)
+    compileAndTest(libs.gradle.kotlin.dsl)
 
-    testImplementation(libs.gradle.shadow)
     testImplementation("org.assertj:assertj-core:3.23.1")
-    testImplementation(gradleApi())
-    testImplementation(gradleKotlinDsl())
     testImplementation(gradleTestKit())
 
     // For grade log4j checker.
-    configurations.onEach {
-        it.exclude(group = "org.apache.logging.log4j", module = "log4j-core")
-        it.exclude(group = "org.apache.logging.log4j", module = "log4j-api")
-        it.exclude(group = "org.apache.logging.log4j", module = "log4j-slf4j-impl")
-    }
-}
-
-val shadowJarTask = tasks.named("shadowJar", ShadowJar::class.java)
-val relocateShadowJar = tasks.register("relocateShadowJar", ConfigureShadowRelocation::class.java) {
-    target = shadowJarTask.get()
-}
-
-shadowJarTask.configure {
-    dependsOn(relocateShadowJar)
-    archiveClassifier.set("")
-    configurations = listOf(shadowImplementation)
-}
-
-kotlin {
-    explicitApi()
-}
-
-// Required for plugin substitution to work in sample projects.
-artifacts {
-    add("runtimeOnly", shadowJarTask)
-}
-
-val ensureDependenciesAreInlined by tasks.registering {
-    description = "Ensures all declared dependencies are inlined into shadowed jar"
-    group = HelpTasksPlugin.HELP_GROUP
-    dependsOn(tasks.shadowJar)
-
-    doLast {
-        val nonInlinedDependencies = mutableListOf<String>()
-        zipTree(tasks.shadowJar.flatMap { it.archiveFile }).visit {
-            if (!isDirectory) return@visit
-
-            val path = relativePath
-            if (
-                !path.startsWith("META-INF") &&
-                path.lastName.endsWith(".class") &&
-                !path.pathString.startsWith("io.github.slimjar".replace(".", "/"))
-            ) nonInlinedDependencies.add(path.pathString)
-        }
-
-        if (nonInlinedDependencies.isEmpty()) return@doLast
-        throw GradleException("Found non inlined dependencies: $nonInlinedDependencies")
+    configurations.configureEach {
+        exclude(group = "org.apache.logging.log4j", module = "log4j-core")
+        exclude(group = "org.apache.logging.log4j", module = "log4j-api")
+        exclude(group = "org.apache.logging.log4j", module = "log4j-slf4j-impl")
     }
 }
 
 tasks {
-    named("check") {
-        dependsOn(ensureDependenciesAreInlined)
-        dependsOn(validatePlugins)
+    val ensureDependenciesAreInlined by registering {
+        description = "Ensures all declared dependencies are inlined into shadowed jar"
+        group = HelpTasksPlugin.HELP_GROUP
+        dependsOn(shadowJar)
+
+        doLast {
+            val nonInlinedDependencies = mutableListOf<String>()
+            zipTree(shadowJar.flatMap { it.archiveFile }).visit {
+                if (!isDirectory) return@visit
+
+                val path = relativePath
+                if (
+                    !path.startsWith("META-INF") &&
+                    path.lastName.endsWith(".class") &&
+                    !path.pathString.startsWith("io.github.slimjar".replace(".", "/"))
+                ) nonInlinedDependencies.add(path.pathString)
+            }
+
+            if (nonInlinedDependencies.isEmpty()) return@doLast
+            throw GradleException("Found non inlined dependencies: $nonInlinedDependencies")
+        }
+    }
+
+    val relocateShadowJar by registering(ConfigureShadowRelocation::class) {
+        target = shadowJar.get()
     }
 
     // Disabling default jar task as it is overridden by shadowJar
-    named("jar") {
-        enabled = false
+    jar { enabled = false }
+
+    test { useJUnitPlatform() }
+
+    check { dependsOn(ensureDependenciesAreInlined, validatePlugins) }
+
+    shadowJar {
+        dependsOn(relocateShadowJar)
+        archiveClassifier.set("")
+        configurations = listOf(shadowImplementation)
+
+        mapOf(
+            "io.github.slimjar" to null,
+            "me.lucko.jarrelocator" to "jarrelocator",
+            "com.google.gson" to "gson",
+            "kotlin" to "kotlin",
+            "org.intellij" to "intellij",
+            "org.jetbrains" to "jetbrains"
+        ).forEach { relocate(it.key, "io.github.slimjar${it.value?.prefixIfNot(".") ?: ""}") }
     }
 
     whenTaskAdded {
-        if (name == "publishPluginJar" || name == "generateMetadataFileForPluginMavenPublication") {
-            dependsOn(named("shadowJar"))
-        }
+        if (name != "publishPluginJar" && name != "generateMetadataFileForPluginMavenPublication") return@whenTaskAdded
+        dependsOn(shadowJar)
     }
 
-    withType<GenerateModuleMetadata> {
-        enabled = false
-    }
+    withType<GenerateModuleMetadata> { enabled = false }
+}
 
-    withType<KotlinCompile> {
-        kotlinOptions {
-            jvmTarget = "17"
-            languageVersion = "1.7"
-            freeCompilerArgs = freeCompilerArgs + "-opt-in=kotlin.RequiresOptIn"
-        }
-    }
-
-    withType<ShadowJar> {
-        mapOf(
-            "io.github.slimjar" to "",
-            "me.lucko.jarrelocator" to ".jarrelocator",
-            "com.google.gson" to ".gson",
-            "kotlin" to ".kotlin",
-            "org.intellij" to ".intellij",
-            "org.jetbrains" to ".jetbrains"
-        ).forEach { relocate(it.key, "io.github.slimjar${it.value}") }
-    }
-
-    test.get().useJUnitPlatform()
+// Required for plugin substitution to work in sample projects.
+artifacts {
+    add("runtimeOnly", tasks.shadowJar)
 }
 
 // Work around publishing shadow jars
 afterEvaluate {
-    publishing {
-        publications {
-            withType<MavenPublication> {
-                if (name == "pluginMaven") {
-                    setArtifacts(listOf(shadowJarTask.get()))
-                }
-            }
-        }
-    }
+    publishing.publications
+        .withType<MavenPublication>()
+        .filter { it.name == "pluginMaven" }
+        .forEach { publication -> publication.setArtifacts(listOf(tasks.shadowJar)) }
 }
 
 gradlePlugin {

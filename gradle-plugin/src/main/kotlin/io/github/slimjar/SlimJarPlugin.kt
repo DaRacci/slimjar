@@ -24,56 +24,141 @@
 
 package io.github.slimjar
 
+import arrow.core.Option
+import arrow.core.flattenOption
+import arrow.core.getOrElse
+import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import io.github.slimjar.data.Targetable
 import io.github.slimjar.exceptions.ShadowNotFoundException
-import io.github.slimjar.func.createConfig
-import io.github.slimjar.task.SlimJar
+import io.github.slimjar.extension.SlimJarExtension
+import io.github.slimjar.extension.SlimJarMultiplatformExtension
+import io.github.slimjar.extensions.slimApiConfiguration
+import io.github.slimjar.extensions.slimConfiguration
+import io.github.slimjar.extensions.targetTask
+import io.github.slimjar.task.SlimJarJavaTask
+import io.github.slimjar.task.SlimJarMultiplatformTask
+import io.github.slimjar.task.SlimJarTask
+import org.gradle.api.Named
+import org.gradle.api.NamedDomainObjectProvider
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
+import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.api.plugins.JavaPlugin
+import org.gradle.kotlin.dsl.apply
+import org.gradle.kotlin.dsl.create
 import org.gradle.kotlin.dsl.extra
+import org.gradle.kotlin.dsl.get
+import org.gradle.kotlin.dsl.hasPlugin
 import org.gradle.kotlin.dsl.withType
-
-public const val SLIM_CONFIGURATION_NAME: String = "slim"
-public const val SLIM_API_CONFIGURATION_NAME: String = "slimApi"
-public const val SLIM_JAR_TASK_NAME: String = "slimJar"
-private const val RESOURCES_TASK = "processResources"
-private const val SHADOW_ID = "com.github.johnrengelman.shadow"
+import org.gradle.language.jvm.tasks.ProcessResources
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 
 public class SlimJarPlugin : Plugin<Project> {
+    public companion object {
+        public val SLIM_CONFIGURATION_NAME: Targetable = Targetable("slim")
+        public val SLIM_API_CONFIGURATION_NAME: Targetable = Targetable("slimApi")
+        public val SLIM_JAR_TASK_NAME: Targetable = Targetable("slimJar")
+        public val SLIM_EXTENSION_NAME: Targetable = Targetable("slimJar")
+    }
 
     override fun apply(project: Project): Unit = with(project) {
-        // Applies Java if not present, since it's required for the compileOnly configuration
-        plugins.apply(JavaPlugin::class.java)
-
-        if (!plugins.hasPlugin(SHADOW_ID)) {
+        if (!plugins.hasPlugin(ShadowPlugin::class)) {
             throw ShadowNotFoundException("SlimJar depends on the Shadow plugin, please apply the plugin. For more information visit: https://imperceptiblethoughts.com/shadow/")
         }
 
-        extensions.create("slimJar", SlimJarExtension::class.java)
+        if (configureForMPP(project) || configurePossibleRoot(project)) return@with
 
-        val slimConfig = createConfig(
-            SLIM_CONFIGURATION_NAME,
-            JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME,
-            JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
-        )
-        if (plugins.hasPlugin("java-library")) {
-            createConfig(
-                SLIM_API_CONFIGURATION_NAME,
-                JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME,
-                JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME
-            )
+        error("SlimJar can only be applied to a Kotlin Multiplatform Project or a root project.")
+    }
+
+    private fun configurePossibleRoot(project: Project): Boolean = with(project) {
+        if (parent != null) {
+            logger.info("Not configuring ${project.name} as root project because it has a parent.")
+            return@with false
+        }
+        logger.info("Configuring ${project.name} as root project.")
+
+        // Applies Java if not present, since it's required for the compileOnly configuration.
+        plugins.apply(JavaPlugin::class)
+        createConfig(SLIM_CONFIGURATION_NAME.get()) {
+            configurations[JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME].extendsFrom(this)
+            configurations[JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME].extendsFrom(this)
         }
 
-        val slimJar = tasks.create(SLIM_JAR_TASK_NAME, SlimJar::class.java, slimConfig)
-        project.dependencies.extra.set(
+        // Configures the slimApi configuration if JavaLibraryPlugin is present
+        plugins.withType<JavaLibraryPlugin> {
+            createConfig(SLIM_API_CONFIGURATION_NAME.get()) {
+                configurations[JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME].extendsFrom(this)
+                configurations[JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME].extendsFrom(this)
+            }
+        }
+
+        createTask<SlimJarJavaTask>(null, extensions.create(SLIM_EXTENSION_NAME.get()))
+
+        true
+    }
+
+    private fun configureForMPP(project: Project): Boolean = with(project) {
+        if (!plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
+            logger.info("Not configuring ${project.name} as MPP project because it does not have the Kotlin Multiplatform plugin.")
+            return@with false
+        }
+        logger.info("Configuring ${project.name} for Kotlin Multiplatform.")
+
+        val mppExt = (kotlinExtension as KotlinMultiplatformExtension)
+        // TODO: Support test targets as well.
+        mppExt.sourceSets.all { set ->
+            logger.info("Configuring sourceSet ${set.name} for Kotlin Multiplatform.")
+
+            createConfig(SLIM_CONFIGURATION_NAME.forSourceSet(set)) { configurations[set.compileOnlyConfigurationName].extendsFrom(this) }
+            createConfig(SLIM_API_CONFIGURATION_NAME.forSourceSet(set)) { configurations[set.apiConfigurationName].extendsFrom(this) }
+        }
+
+        mppExt.targets.all { target ->
+            logger.info("Configuring target ${target.name} for Kotlin Multiplatform.")
+
+            target.compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
+                listOf(set.slimConfiguration, set.slimApiConfiguration)
+            }.flattenOption().toTypedArray()
+
+            val slimJarExt = extensions.create<SlimJarMultiplatformExtension>(SLIM_EXTENSION_NAME.forTarget(target), target)
+            createTask<SlimJarMultiplatformTask>(target, slimJarExt, target)
+        }
+
+        true
+    }
+
+    private fun Project.createConfig(
+        configurationName: String,
+        configure: Configuration.() -> Unit = {}
+    ): NamedDomainObjectProvider<Configuration> = Option.catch { project.configurations.named(configurationName).also { config -> config.configure(configure) } }.getOrElse {
+        project.configurations.register(configurationName) { config ->
+            config.isTransitive = true
+            config.configure()
+        }
+    }
+
+    private inline fun <reified T : SlimJarTask> Project.createTask(
+        target: Named? = null,
+        extension: SlimJarExtension,
+        vararg constructorArgs: Any
+    ) {
+        val slimJarTask = tasks.create<T>(SLIM_JAR_TASK_NAME.forNamed(target), *constructorArgs)
+
+        // The fuck does this do?
+        dependencies.extra.set(
             "slimjar",
-            asGroovyClosure("+") { version -> slimJarLib(version) }
+            asGroovyClosure("+", ::slimJarLib)
         )
+
         // Hooks into shadow to inject relocations
-        tasks.withType<ShadowJar>() {
+        tasks.targetTask<ShadowJar>(target, "shadowJar") {
             doFirst { _ ->
-                slimExtension.relocations.forEach { rule ->
+                extension.relocations.get().forEach { rule ->
                     relocate(rule.originalPackagePattern, rule.relocatedPackagePattern) {
                         rule.inclusions.forEach { include(it) }
                         rule.exclusions.forEach { exclude(it) }
@@ -82,8 +167,10 @@ public class SlimJarPlugin : Plugin<Project> {
             }
         }
 
-        // Runs the task once resources are being processed to save the json file
-        tasks.findByName(RESOURCES_TASK)?.finalizedBy(slimJar)
+        // Runs the task once resources are being processed to save the json file.
+        tasks.targetTask<ProcessResources>(target, JavaPlugin.PROCESS_RESOURCES_TASK_NAME) {
+            finalizedBy(slimJarTask)
+        }
     }
 }
 
