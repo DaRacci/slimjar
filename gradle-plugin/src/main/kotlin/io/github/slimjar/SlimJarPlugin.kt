@@ -32,6 +32,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.github.slimjar.data.Targetable
 import io.github.slimjar.exceptions.ShadowNotFoundException
 import io.github.slimjar.extension.SlimJarExtension
+import io.github.slimjar.extension.SlimJarJavaExtension
 import io.github.slimjar.extension.SlimJarMultiplatformExtension
 import io.github.slimjar.extensions.slimApiConfiguration
 import io.github.slimjar.extensions.slimConfiguration
@@ -97,7 +98,7 @@ public class SlimJarPlugin : Plugin<Project> {
             }
         }
 
-        createTask<SlimJarJavaTask>(null, extensions.create(SLIM_EXTENSION_NAME.get()))
+        createTask<SlimJarJavaTask>(null, extensions.create<SlimJarJavaExtension>(SLIM_EXTENSION_NAME.get()))
 
         true
     }
