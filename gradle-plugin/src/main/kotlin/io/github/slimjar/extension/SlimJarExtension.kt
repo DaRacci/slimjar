@@ -1,24 +1,35 @@
-package io.github.slimjar
+package io.github.slimjar.extension
 
-import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
-import io.github.slimjar.func.slimInjectToIsolated
+import io.github.slimjar.andDisallowUnsafeRead
+import io.github.slimjar.andFinalizeValueOnRead
 import io.github.slimjar.relocation.RelocationConfig
 import io.github.slimjar.relocation.RelocationRule
 import io.github.slimjar.resolver.data.Mirror
-import io.github.slimjar.task.SlimJar
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
-import org.gradle.kotlin.dsl.* // ktlint-disable no-wildcard-imports
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.Optional
+import org.gradle.kotlin.dsl.property
+import org.gradle.kotlin.dsl.setProperty
 
-public abstract class SlimJarExtension(project: Project) {
+public sealed class SlimJarExtension protected constructor(project: Project) {
 
-    @Transient internal val relocations = mutableSetOf<RelocationRule>()
+    @get:Input
+    @get:Optional
+    public val relocations: SetProperty<RelocationRule> = project.objects.setProperty<RelocationRule>()
+        .andFinalizeValueOnRead().andDisallowUnsafeRead()
 
-    @Transient internal val mirrors = mutableSetOf<Mirror>()
+    @get:Input
+    @get:Optional
+    public val mirrors: SetProperty<Mirror> = project.objects.setProperty<Mirror>()
+        .andFinalizeValueOnRead().andDisallowUnsafeRead()
 
-    @Transient internal val isolatedProjects = mutableSetOf<Project>()
+    @get:Input
+    @get:Optional
+    public val compileTimeResolution: Property<Boolean> = project.objects.property<Boolean>()
+        .convention(true).andFinalizeValueOnRead().andDisallowUnsafeRead()
 
     /**
      * Sets a global repositories that will be used to resolve dependencies,
@@ -26,8 +37,10 @@ public abstract class SlimJarExtension(project: Project) {
      *
      * When set the global repositories will be the only used repositories.
      */
+    @get:Input
+    @get:Optional
     public val globalRepositories: SetProperty<String> = project.objects.setProperty<String>()
-        .apply(SetProperty<*>::finalizeValueOnRead)
+        .andFinalizeValueOnRead().andDisallowUnsafeRead()
 
     /**
      * Contracts that when building the slimjar, all dependencies must be resolved and there is no ambiguity.
@@ -35,16 +48,20 @@ public abstract class SlimJarExtension(project: Project) {
      *
      * Defaults to false.
      */
-    public val requirePreResolve: Property<Boolean> = project.objects.property(Boolean::class.java)
-        .convention(false).apply(Property<*>::finalizeValueOnRead)
+    @get:Input
+    @get:Optional
+    public val requirePreResolve: Property<Boolean> = project.objects.property<Boolean>()
+        .convention(false).andFinalizeValueOnRead().andDisallowUnsafeRead()
 
     /**
      * Contracts that when building the slimjar, all pre-resolved dependencies must have a valid checksum.
      *
      * Defaults to false.
      */
-    public val requireChecksum: Property<Boolean> = project.objects.property(Boolean::class.java)
-        .convention(false).apply(Property<*>::finalizeValueOnRead)
+    @get:Input
+    @get:Optional
+    public val requireChecksum: Property<Boolean> = project.objects.property<Boolean>()
+        .convention(false).andFinalizeValueOnRead().andDisallowUnsafeRead()
 
     /**
      * @receiver the original path
@@ -62,32 +79,12 @@ public abstract class SlimJarExtension(project: Project) {
     private fun addRelocation(
         original: String,
         relocated: String,
-        configure: Action<RelocationConfig>? = null
+        configure: Action<RelocationConfig> = Action { }
     ): SlimJarExtension {
         val relocationConfig = RelocationConfig()
-        configure?.execute(relocationConfig)
+        configure.execute(relocationConfig)
         val rule = RelocationRule(original, relocated, relocationConfig.exclusions, relocationConfig.inclusions)
         relocations.add(rule)
         return this
-    }
-
-    public open fun isolate(target: Project) {
-        isolatedProjects.add(target)
-
-        if (target.slimInjectToIsolated) {
-            target.pluginManager.apply(ShadowPlugin::class.java)
-            target.pluginManager.apply(SlimJarPlugin::class.java)
-            target.getTasksByName("slimJar", true).firstOrNull()?.setProperty("shade", false)
-        }
-
-        target.tasks {
-            val jarTask = findByName("reobfJar")
-                ?: findByName("shadowJar")
-                ?: findByName("jar") ?: return@tasks
-
-            withType<SlimJar> {
-                dependsOn(jarTask)
-            }
-        }
     }
 }

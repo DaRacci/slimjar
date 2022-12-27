@@ -24,7 +24,6 @@
 
 package io.github.slimjar.relocation
 
-import io.github.slimjar.SlimJarExtension
 import org.gradle.api.internal.catalog.ExternalModuleDependencyFactory
 
 /**
