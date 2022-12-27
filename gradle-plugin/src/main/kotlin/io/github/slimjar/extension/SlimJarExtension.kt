@@ -8,7 +8,7 @@ import org.gradle.api.provider.Property
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.Input
 
-public sealed class SlimJarExtension {
+public abstract class SlimJarExtension {
     @get:Input
     public abstract val relocations: SetProperty<RelocationRule>
 
