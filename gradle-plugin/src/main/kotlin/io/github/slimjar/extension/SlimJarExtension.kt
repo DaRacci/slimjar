@@ -14,7 +14,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.kotlin.dsl.property
 import org.gradle.kotlin.dsl.setProperty
 
-public sealed class SlimJarExtension protected constructor(project: Project) {
+public abstract class SlimJarExtension protected constructor(project: Project) {
 
     @get:Input
     @get:Optional
