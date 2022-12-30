@@ -66,6 +66,7 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository
 import org.gradle.api.tasks.CacheableTask
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -91,6 +92,7 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
     @get:OutputDirectory
     public abstract val outputDirectory: File
 
+    @get:Internal
     public abstract val slimJarExtension: SlimJarExtension
 
     @get:Input
