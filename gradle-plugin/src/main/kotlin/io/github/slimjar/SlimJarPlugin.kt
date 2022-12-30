@@ -25,7 +25,6 @@
 package io.github.slimjar
 
 import arrow.core.Option
-import arrow.core.flattenOption
 import arrow.core.getOrElse
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
@@ -34,8 +33,8 @@ import io.github.slimjar.exceptions.ShadowNotFoundException
 import io.github.slimjar.extension.SlimJarExtension
 import io.github.slimjar.extension.SlimJarJavaExtension
 import io.github.slimjar.extension.SlimJarMultiplatformExtension
-import io.github.slimjar.extensions.slimApiConfiguration
-import io.github.slimjar.extensions.slimConfiguration
+import io.github.slimjar.extensions.slimApiConfigurationName
+import io.github.slimjar.extensions.slimConfigurationName
 import io.github.slimjar.extensions.targetTask
 import io.github.slimjar.task.SlimJarJavaTask
 import io.github.slimjar.task.SlimJarMultiplatformTask
@@ -57,6 +56,8 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 
 public class SlimJarPlugin : Plugin<Project> {
     public companion object {
@@ -71,12 +72,15 @@ public class SlimJarPlugin : Plugin<Project> {
             throw ShadowNotFoundException("SlimJar depends on the Shadow plugin, please apply the plugin. For more information visit: https://imperceptiblethoughts.com/shadow/")
         }
 
-        if (configureForMPP(project) || configurePossibleRoot(project)) return@with
+        val mpp = configureForMPP(project)
+        val java = configureForJava(project)
+
+        if (mpp || java) return@with
 
         error("SlimJar can only be applied to a Kotlin Multiplatform Project or a root project.")
     }
 
-    private fun configurePossibleRoot(project: Project): Boolean = with(project) {
+    private fun configureForJava(project: Project) = with(project) {
         if (parent != null) {
             logger.info("Not configuring ${project.name} as root project because it has a parent.")
             return@with false
@@ -104,7 +108,8 @@ public class SlimJarPlugin : Plugin<Project> {
     }
 
     private fun configureForMPP(project: Project): Boolean = with(project) {
-        if (!plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
+        if (!plugins.hasPlugin(KotlinMultiplatformPluginWrapper::class)) {
+//        if (!plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
             logger.info("Not configuring ${project.name} as MPP project because it does not have the Kotlin Multiplatform plugin.")
             return@with false
         }
@@ -120,11 +125,15 @@ public class SlimJarPlugin : Plugin<Project> {
         }
 
         mppExt.targets.all { target ->
+            if (target.platformType != KotlinPlatformType.jvm) {
+                logger.info("Not configuring target ${target.name} for Kotlin Multiplatform because it is not a JVM target.")
+                return@all
+            }
             logger.info("Configuring target ${target.name} for Kotlin Multiplatform.")
 
             target.compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
-                listOf(set.slimConfiguration, set.slimApiConfiguration)
-            }.flattenOption().toTypedArray()
+                listOf(configurations[set.slimConfigurationName], configurations[set.slimApiConfigurationName])
+            }
 
             val slimJarExt = extensions.create<SlimJarMultiplatformExtension>(SLIM_EXTENSION_NAME.forTarget(target), target)
             createTask<SlimJarMultiplatformTask>(target, slimJarExt, target)

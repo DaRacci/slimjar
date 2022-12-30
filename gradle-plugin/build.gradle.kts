@@ -12,6 +12,7 @@ plugins {
 
 repositories {
     maven("https://plugins.gradle.org/m2/")
+    maven("https://repo.papermc.io/repository/maven-public/")
 }
 
 val shadowImplementation: Configuration by configurations.creating
@@ -33,6 +34,7 @@ dependencies {
     compileAndTest(gradleApi())
     compileAndTest(gradleKotlinDsl())
     compileAndTest(libs.gradle.shadow)
+    compileAndTest(libs.gradle.minecraft.paperweight)
     compileAndTest(libs.gradle.kotlin.jvm)
     compileAndTest(libs.gradle.kotlin.mpp)
     compileAndTest(libs.gradle.kotlin.dsl)
@@ -94,7 +96,7 @@ tasks {
             "com.google.gson" to "gson",
             "kotlin" to "kotlin",
             "org.intellij" to "intellij",
-            "org.jetbrains" to "jetbrains"
+//            "org.jetbrains" to "jetbrains"
         ).forEach { relocate(it.key, "io.github.slimjar${it.value?.prefixIfNot(".") ?: ""}") }
     }
 
@@ -128,6 +130,8 @@ gradlePlugin {
             implementationClass = "io.github.slimjar.SlimJarPlugin"
         }
     }
+
+    testSourceSets(sourceSets.test.get())
 }
 
 pluginBundle {

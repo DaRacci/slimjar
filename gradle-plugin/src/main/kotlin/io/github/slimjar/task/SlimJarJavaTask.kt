@@ -16,7 +16,7 @@ public open class SlimJarJavaTask @Inject constructor() : SlimJarTask() {
     public final override val outputDirectory: File = buildDirectory.resolve("resources/slimjar/")
 
     // Only one configuration will be present for pure Java projects.
-    public final override val slimJarExtension: SlimJarJavaExtension = project.extensions.getByType()
+    @Transient public final override val slimJarExtension: SlimJarJavaExtension = project.extensions.getByType()
 
     public final override val slimjarConfigurations: List<Configuration> = arrayOf(SLIM_CONFIGURATION_NAME, SLIM_API_CONFIGURATION_NAME).mapNotNull {
         project.configurations.findByName(it.get())

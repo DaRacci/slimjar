@@ -92,7 +92,6 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
     @get:OutputDirectory
     public abstract val outputDirectory: File
 
-    @get:Input
     public abstract val slimJarExtension: SlimJarExtension
 
     @get:Input
@@ -109,6 +108,7 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
         ensureOutputDir()
         with(outputDirectory.resolve("slimjar.json")) {
             val dependencyData = DependencyData(slimJarExtension.mirrors.get(), repositories, dependencies, slimJarExtension.relocations.get())
+            outputs.file(this)
             outputStream().use { Json.encodeToStream(dependencyData, it) }
             withShadowTask { from(this) }
         }
@@ -197,6 +197,7 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
 
         ensureOutputDir()
         with(file) {
+            outputs.file(this)
             outputStream().use { Json.encodeToStream(results, it) }
             withShadowTask { from(this) }
         }
