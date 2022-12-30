@@ -27,19 +27,27 @@ package io.github.slimjar.resolver;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.resolver.enquirer.RepositoryEnquirerFactory;
 import io.github.slimjar.resolver.pinger.URLPinger;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Map;
 
 public final class CachingDependencyResolverFactory implements DependencyResolverFactory {
-    private final URLPinger urlPinger;
+    @NotNull private final URLPinger urlPinger;
 
-    public CachingDependencyResolverFactory(final URLPinger urlPinger) {
+    @Contract(pure = true)
+    public CachingDependencyResolverFactory(@NotNull final URLPinger urlPinger) {
         this.urlPinger = urlPinger;
     }
 
     @Override
-    public DependencyResolver create(final Collection<Repository> repositories, final Map<String, ResolutionResult> preResolvedResults, final RepositoryEnquirerFactory enquirerFactory) {
+    @Contract(pure = true)
+    public @NotNull DependencyResolver create(
+        @NotNull final Collection<@NotNull Repository> repositories,
+        @NotNull final Map<String, ResolutionResult> preResolvedResults,
+        @NotNull final RepositoryEnquirerFactory enquirerFactory
+    ) {
         return new CachingDependencyResolver(urlPinger, repositories, enquirerFactory, preResolvedResults);
     }
 }

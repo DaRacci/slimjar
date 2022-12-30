@@ -24,6 +24,9 @@
 
 package io.github.slimjar.logging;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Collection;
 
 public final class MediatingProcessLogger implements ProcessLogger {
@@ -34,14 +37,14 @@ public final class MediatingProcessLogger implements ProcessLogger {
     }
 
     @Override
-    public void log(final String message, final Object... args) {
+    public void log(final @NotNull String message, final Object... args) {
         for (final ProcessLogger logger : loggers) {
             logger.log(message, args);
         }
     }
 
     @Override
-    public void debug(final String message, final Object... args) {
+    public void debug(final @NotNull String message, final @Nullable Object @Nullable ... args) {
         for (final ProcessLogger logger : loggers) {
             logger.debug(message, args);
         }

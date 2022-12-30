@@ -26,23 +26,31 @@ package io.github.slimjar.resolver.strategy;
 
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
 public final class MediatingPathResolutionStrategy implements PathResolutionStrategy {
-    private final PathResolutionStrategy releaseStrategy;
-    private final PathResolutionStrategy snapshotStrategy;
+    @NotNull private final PathResolutionStrategy releaseStrategy;
+    @NotNull private final PathResolutionStrategy snapshotStrategy;
 
-    public MediatingPathResolutionStrategy(final PathResolutionStrategy releaseStrategy, final PathResolutionStrategy snapshotStrategy) {
+    @Contract(pure = true)
+    public MediatingPathResolutionStrategy(
+        @NotNull final PathResolutionStrategy releaseStrategy,
+        @NotNull final PathResolutionStrategy snapshotStrategy
+    ) {
         this.releaseStrategy = releaseStrategy;
         this.snapshotStrategy = snapshotStrategy;
     }
 
     @Override
-    public Collection<String> pathTo(final Repository repository, final Dependency dependency) {
-        if (dependency.snapshotId() != null) {
-            return snapshotStrategy.pathTo(repository, dependency);
-        }
+    @Contract(pure = true)
+    public @NotNull Collection<@NotNull String> pathTo(
+        @NotNull final Repository repository,
+        @NotNull final Dependency dependency
+    ) {
+        if (dependency.snapshotId() != null) return snapshotStrategy.pathTo(repository, dependency);
         return releaseStrategy.pathTo(repository, dependency);
     }
 }

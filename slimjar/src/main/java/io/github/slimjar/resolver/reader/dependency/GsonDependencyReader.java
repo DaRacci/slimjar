@@ -26,20 +26,20 @@ package io.github.slimjar.resolver.reader.dependency;
 
 import io.github.slimjar.resolver.data.DependencyData;
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public final class GsonDependencyReader implements DependencyReader {
-    private final GsonFacade gson;
-
-    public GsonDependencyReader(final GsonFacade gson) {
-        this.gson = gson;
-    }
+public record GsonDependencyReader(
+    @NotNull GsonFacade gsonFacade
+) implements DependencyReader {
 
     @Override
-    public DependencyData read(final InputStream inputStream) throws ReflectiveOperationException {
-        final InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-        return gson.fromJson(inputStreamReader, DependencyData.class);
+    @Contract(pure = true)
+    public @NotNull DependencyData read(@NotNull final InputStream inputStream) throws ReflectiveOperationException {
+        final var inputStreamReader = new InputStreamReader(inputStream);
+        return gsonFacade.fromJson(inputStreamReader, DependencyData.class);
     }
 }

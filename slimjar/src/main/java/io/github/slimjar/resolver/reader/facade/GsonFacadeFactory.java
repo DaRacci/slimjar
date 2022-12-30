@@ -24,6 +24,9 @@
 
 package io.github.slimjar.resolver.reader.facade;
 
+import org.jetbrains.annotations.NotNull;
+
+@FunctionalInterface
 public interface GsonFacadeFactory {
-    GsonFacade createFacade() throws ReflectiveOperationException;
+    @NotNull GsonFacade createFacade() throws ReflectiveOperationException;
 }

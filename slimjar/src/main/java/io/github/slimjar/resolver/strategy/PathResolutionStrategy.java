@@ -26,9 +26,14 @@ package io.github.slimjar.resolver.strategy;
 
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 
+@FunctionalInterface
 public interface PathResolutionStrategy {
-    Collection<String> pathTo(final Repository repository, final Dependency dependency);
+    @NotNull Collection<@NotNull String> pathTo(
+        @NotNull final Repository repository,
+        @NotNull final Dependency dependency
+    );
 }

@@ -25,18 +25,17 @@
 package io.github.slimjar.util;
 
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.NotNull;
 
 public final class Repositories {
+    private Repositories() {}
 
-    private Repositories() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("This class is not meant to be instantiated");
-    }
-
-    public static String fetchFormattedUrl(final Repository repository) {
-        String repoUrl = repository.url().toString();
+    public static @NotNull String fetchFormattedUrl(@NotNull final Repository repository) {
+        var repoUrl = repository.url().toString();
         if (!repoUrl.endsWith("/")) {
             repoUrl += "/";
         }
+
         return repoUrl;
     }
 }

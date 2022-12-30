@@ -71,7 +71,7 @@ public final class URLDependencyDownloader implements DependencyDownloader {
         final ResolutionResult result = dependencyResolver.resolve(dependency)
                 .orElseThrow(() -> new UnresolvedDependencyException(dependency));
 
-        if (result.isAggregator()) {
+        if (result.aggregator()) {
             expectedOutputFile.getParentFile().mkdirs();
             expectedOutputFile.createNewFile();
             Files.write(expectedOutputFile.toPath(), BOM_BYTES);
@@ -86,7 +86,7 @@ public final class URLDependencyDownloader implements DependencyDownloader {
 
         LOGGER.log("Downloading %s...", dependency.artifactId());
 
-        final URL url = result.getDependencyURL();
+        final URL url = result.dependencyURL();
         LOGGER.debug("Connecting to %s", url);
 
         final URLConnection connection = Connections.createDownloadConnection(url);

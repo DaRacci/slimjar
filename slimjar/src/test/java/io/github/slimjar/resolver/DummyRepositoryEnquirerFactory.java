@@ -27,10 +27,11 @@ package io.github.slimjar.resolver;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.resolver.enquirer.RepositoryEnquirer;
 import io.github.slimjar.resolver.enquirer.RepositoryEnquirerFactory;
+import org.jetbrains.annotations.NotNull;
 
 public final class DummyRepositoryEnquirerFactory implements RepositoryEnquirerFactory {
     @Override
-    public RepositoryEnquirer create(final Repository repository) {
+    public @NotNull RepositoryEnquirer create(final @NotNull Repository repository) {
         return new DummyRepositoryEnquirer();
     }
 }

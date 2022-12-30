@@ -26,6 +26,8 @@ package io.github.slimjar.resolver.mirrors;
 
 import io.github.slimjar.resolver.data.Mirror;
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
 import java.util.Collection;
@@ -33,17 +35,22 @@ import java.util.stream.Collectors;
 
 public final class SimpleMirrorSelector implements MirrorSelector {
     @Override
-    public Collection<Repository> select(final Collection<Repository> mainRepositories, final Collection<Mirror> mirrors) {
-        final Collection<URL> originals = mirrors.stream()
+    @Contract(pure = true)
+    public @NotNull Collection<@NotNull Repository> select(
+        final @NotNull Collection<@NotNull Repository> mainRepositories,
+        final @NotNull Collection<@NotNull Mirror> mirrors
+    ) {
+        final var originals = mirrors.stream()
                 .map(Mirror::original)
                 .collect(Collectors.toSet());
-        final Collection<Repository> resolved = mainRepositories.stream()
+        final var resolved = mainRepositories.stream()
                 .filter(repo -> !originals.contains(repo.url()))
                 .collect(Collectors.toSet());
-        final Collection<Repository> mirrored = mirrors.stream()
+        final var mirrored = mirrors.stream()
                 .map(Mirror::mirroring)
                 .map(Repository::new)
                 .collect(Collectors.toSet());
+
         resolved.addAll(mirrored);
         return resolved;
     }

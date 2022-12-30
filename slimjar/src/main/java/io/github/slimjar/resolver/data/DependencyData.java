@@ -25,23 +25,27 @@
 package io.github.slimjar.resolver.data;
 
 import io.github.slimjar.relocation.RelocationRule;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-public final class DependencyData {
+public record DependencyData(
+    @NotNull Collection<Mirror> mirrors,
+    @NotNull Collection<Repository> repositories,
+    @NotNull Collection<Dependency> dependencies,
+    @NotNull Collection<RelocationRule> relocations
+) {
 
-    private Collection<Mirror> mirrors;
-    private final Collection<Repository> repositories;
-    private final Collection<Dependency> dependencies;
-    private final Collection<RelocationRule> relocations;
-
+    @Contract(pure = true)
     public DependencyData(
-        final Collection<Mirror> mirrors,
-        final Collection<Repository> repositories,
-        final Collection<Dependency> dependencies,
-        final Collection<RelocationRule> relocations
+        @NotNull final Collection<@NotNull Mirror> mirrors,
+        @NotNull final Collection<@NotNull Repository> repositories,
+        @NotNull final Collection<@NotNull Dependency> dependencies,
+        @NotNull final Collection<@NotNull RelocationRule> relocations
     ) {
         this.mirrors = Collections.unmodifiableCollection(mirrors);
         this.repositories = Collections.unmodifiableCollection(repositories);
@@ -49,40 +53,33 @@ public final class DependencyData {
         this.relocations = Collections.unmodifiableCollection(relocations);
     }
 
-    public Collection<Repository> repositories() {
-        return repositories;
-    }
-
-    public Collection<Dependency> dependencies() {
-        return dependencies;
-    }
-
-    public Collection<RelocationRule> relocations() {
-        return relocations;
-    }
-
-    public Collection<Mirror> mirrors() {
-        return mirrors;
-    }
-
     @Override
-    public boolean equals(final Object o) {
+    @Contract(value = "null -> false", pure = true)
+    public boolean equals(@Nullable final Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final DependencyData that = (DependencyData) o;
-        return isCollectionEqual(repositories, that.repositories) && isCollectionEqual(dependencies, that.dependencies) && isCollectionEqual(relocations, that.relocations);
+        if (!(o instanceof DependencyData dependencyData)) return false;
+
+        return isCollectionEqual(repositories, dependencyData.repositories)
+            && isCollectionEqual(dependencies, dependencyData.dependencies)
+            && isCollectionEqual(relocations, dependencyData.relocations);
     }
 
-    private <T> boolean isCollectionEqual(Collection<T> a, Collection<T> b) {
-        return a.containsAll(b) && b.containsAll(a);
+    @Contract(pure = true)
+    private <T> boolean isCollectionEqual(
+        @NotNull final Collection<T> collectionA,
+        @NotNull Collection<T> collectionB
+    ) {
+        return collectionA.containsAll(collectionB) && collectionB.containsAll(collectionA);
     }
 
     @Override
+    @Contract(pure = true)
     public int hashCode() {
         return Objects.hash(repositories, dependencies, relocations);
     }
 
     @Override
+    @Contract(pure = true)
     public String toString() {
         return "DependencyData{" +
             "mirrors=" + mirrors +
@@ -91,4 +88,5 @@ public final class DependencyData {
             ", relocations=" + relocations +
             '}';
     }
+
 }

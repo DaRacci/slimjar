@@ -26,6 +26,7 @@ package io.github.slimjar.resolver.pinger;
 
 import io.github.slimjar.logging.LogDispatcher;
 import io.github.slimjar.logging.ProcessLogger;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -40,32 +41,37 @@ public final class HttpURLPinger implements URLPinger {
     private static final Collection<String> SUPPORTED_PROTOCOLS = Arrays.asList("HTTP", "HTTPS");
 
     @Override
-    public boolean ping(final URL url) {
-        final String urlStr = url.toString();
-        LOGGER.debug("Pinging %s", urlStr);
+    public boolean ping(final @NotNull URL url) {
+        final var urlStr = url.toString();
+        
+        LOGGER.debug("Pinging %s" + urlStr);
+        
         if (!isSupported(url)) {
-            LOGGER.debug("Protocol not supported for %s", url.toString());
+            LOGGER.error("Unsupported protocol for %s" + urlStr);
             return false;
         }
+        
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) url.openConnection();
             connection.addRequestProperty("User-Agent", SLIMJAR_USER_AGENT);
             connection.connect();
-            final boolean result = connection.getResponseCode() == HttpURLConnection.HTTP_OK;
-            LOGGER.debug("Ping %s for %s", result ? "successful" : "failed", url.toString());
-            return connection.getResponseCode() == HttpURLConnection.HTTP_OK;
-        } catch (IOException e) {
-            LOGGER.debug("Ping failed for %s", url.toString());
-            return false;
+            
+            final var responseOk = connection.getResponseCode() == HttpURLConnection.HTTP_OK;
+            LOGGER.debug("Ping %s for %s", responseOk ? "successful" : "failed", urlStr);
+            return responseOk;
+        } catch (final IOException err) {
+            LOGGER.error("Ping failed for %s" + urlStr);
         } finally {
             if (connection != null) {
                 connection.disconnect();
             }
         }
+
+        return false;
     }
 
-    public boolean isSupported(final URL url) {
+    public boolean isSupported(@NotNull final URL url) {
         final String protocol = url.getProtocol().toUpperCase(Locale.ENGLISH);
         return SUPPORTED_PROTOCOLS.contains(protocol);
     }

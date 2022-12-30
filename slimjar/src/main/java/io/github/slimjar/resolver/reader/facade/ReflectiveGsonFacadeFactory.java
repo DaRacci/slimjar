@@ -32,13 +32,13 @@ import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.DependencyData;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.util.Packages;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
@@ -62,7 +62,7 @@ public final class ReflectiveGsonFacadeFactory implements GsonFacadeFactory {
     }
 
     @Override
-    public GsonFacade createFacade() throws ReflectiveOperationException {
+    public @NotNull GsonFacade createFacade() throws ReflectiveOperationException {
         final Object gson = gsonConstructor.newInstance();
         return new ReflectiveGsonFacade(gson, gsonFromJsonMethod, gsonFromJsonTypeMethod, canonicalizeMethod);
     }
@@ -77,7 +77,7 @@ public final class ReflectiveGsonFacadeFactory implements GsonFacadeFactory {
                 .downloadDirectoryPath(downloadPath)
                 .dataProviderFactory(url -> () -> ReflectiveGsonFacadeFactory.getGsonDependency(repositories))
                 .relocatorFactory(rules -> new PassthroughRelocator())
-                .preResolutionDataProviderFactory(a -> Collections::emptyMap)
+                .preResolutionDataProviderFactory(a -> () -> Collections.emptyMap())
                 .relocationHelperFactory(relocator -> (dependency,file) -> file)
                 .build();
         final Class<?> gsonClass = Class.forName(Packages.fix(GSON_PACKAGE), true, classLoader);

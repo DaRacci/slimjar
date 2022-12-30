@@ -24,37 +24,40 @@
 
 package io.github.slimjar.resolver.reader.facade;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
 
-public final class ReflectiveGsonFacade implements GsonFacade {
-    private final Object gson;
-    private final Method gsonFromJsonMethod;
-    private final Method gsonFromJsonTypeMethod;
-    private final Method canonicalizeMethod;
-
-    ReflectiveGsonFacade(final Object gson, final Method gsonFromJsonMethod, final Method gsonFromJsonTypeMethod, final Method canonicalizeMethod) {
-        this.gson = gson;
-        this.gsonFromJsonMethod = gsonFromJsonMethod;
-        this.gsonFromJsonTypeMethod = gsonFromJsonTypeMethod;
-        this.canonicalizeMethod = canonicalizeMethod;
-    }
+public record ReflectiveGsonFacade(
+    @NotNull Object gson,
+    @NotNull Method gsonFromJsonMethod,
+    @NotNull Method gsonFromJsonTypeMethod,
+    @NotNull Method canonicalizeMethod
+) implements GsonFacade {
 
     @Override
-    public <T> T fromJson(InputStreamReader reader, Class<T> clazz) throws ReflectiveOperationException {
-        final Object result = gsonFromJsonMethod.invoke(gson, reader, clazz);
+    @Contract(pure = true)
+    public <T> @NotNull T fromJson(
+        @NotNull final InputStreamReader reader,
+        @NotNull final Class<T> clazz
+    ) throws ReflectiveOperationException {
+        final var result = gsonFromJsonMethod.invoke(gson, reader, clazz);
         if (clazz.isAssignableFrom(result.getClass())) {
             return (T) result;
-        } else {
-            throw new AssertionError("Gson returned wrong type!");
-        }
+        } else throw new AssertionError("Gson returned wrong type!");
     }
 
     @Override
-    public <T> T fromJson(InputStreamReader reader, Type rawType) throws ReflectiveOperationException {
-        final Object canonicalizedType = canonicalizeMethod.invoke(null, rawType);
-        final Object result = gsonFromJsonTypeMethod.invoke(gson, reader, canonicalizedType);
+    @Contract(pure = true)
+    public <T> @NotNull T fromJson(
+        @NotNull final InputStreamReader reader,
+        @NotNull final Type rawType
+    ) throws ReflectiveOperationException {
+        final var canonicalizedType = canonicalizeMethod.invoke(null, rawType);
+        final var result = gsonFromJsonTypeMethod.invoke(gson, reader, canonicalizedType);
         return (T) result;
     }
 }

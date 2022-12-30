@@ -1,24 +1,33 @@
 package io.github.slimjar.resolver.reader.facade;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
+@SuppressWarnings({"java:S2326", "unused"}) // Used in reflection
 public class TypeToken<T> {
-    private final Type rawType;
+    private final @NotNull Type rawType;
+
     public TypeToken() {
         this.rawType = getSuperclassTypeParameter(getClass());
     }
 
-    public Type getRawType() {
+    @Contract(pure = true)
+    public @NotNull Type rawType() {
         return rawType;
     }
 
-    private static Type getSuperclassTypeParameter(final Class<?> subclass) {
-        final Type superclass = subclass.getGenericSuperclass();
+    @Contract(pure = true)
+    private static @NotNull Type getSuperclassTypeParameter(@NotNull final Class<?> subclass) {
+        final var superclass = subclass.getGenericSuperclass();
+
         if (superclass instanceof Class) {
             throw new RuntimeException("Type parameter not found");
         }
-        ParameterizedType parameterized = (ParameterizedType) superclass;
+
+        final var parameterized = (ParameterizedType) superclass;
         return parameterized.getActualTypeArguments()[0];
     }
 }

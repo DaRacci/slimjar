@@ -95,7 +95,7 @@ public final class ByteBuddyInstrumentationFactory implements InstrumentationFac
                 .generate();
 
         ApplicationBuilder.injecting("SlimJar-Agent", classLoader)
-                .dataProviderFactory(dataUrl -> ByteBuddyInstrumentationFactory::getDependency)
+                .dataProviderFactory(dataUrl -> () -> getDependency())
                 .relocatorFactory(rules -> new PassthroughRelocator())
                 .relocationHelperFactory(rel -> (dependency, file) -> file)
                 .build();

@@ -2,23 +2,24 @@ package io.github.slimjar.resolver.reader.resolution;
 
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
 import io.github.slimjar.resolver.reader.facade.GsonFacadeFactory;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
 
-public final class GsonPreResolutionDataProviderFactory implements PreResolutionDataProviderFactory {
-    private final GsonFacade gson;
+public record GsonPreResolutionDataProviderFactory(
+    @NotNull GsonFacade gsonFacade
+) implements PreResolutionDataProviderFactory {
 
-    public GsonPreResolutionDataProviderFactory(final GsonFacadeFactory gson) throws ReflectiveOperationException {
+    @Contract(pure = true)
+    public GsonPreResolutionDataProviderFactory(@NotNull final GsonFacadeFactory gson) throws ReflectiveOperationException {
         this(gson.createFacade());
     }
 
-    public GsonPreResolutionDataProviderFactory(final GsonFacade gson) {
-        this.gson = gson;
-    }
-
     @Override
-    public PreResolutionDataProvider create(final URL resolutionFileURL) {
-        final PreResolutionDataReader resolutionDataReader = new GsonPreResolutionDataReader(gson);
+    @Contract(pure = true)
+    public @NotNull PreResolutionDataProvider create(@NotNull final URL resolutionFileURL) {
+        final var resolutionDataReader = new GsonPreResolutionDataReader(gsonFacade);
         return new GsonPreResolutionDataProvider(resolutionDataReader, resolutionFileURL);
     }
 }

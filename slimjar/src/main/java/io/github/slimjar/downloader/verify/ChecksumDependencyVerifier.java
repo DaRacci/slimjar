@@ -94,7 +94,7 @@ public final class ChecksumDependencyVerifier implements DependencyVerifier {
 
         if (result.isEmpty()) return false;
 
-        final URL checkSumUrl = result.get().getChecksumURL();
+        final URL checkSumUrl = result.get().checksumURL();
         LOGGER.log("Resolved checksum URL for %s as %s", dependency.artifactId(), checkSumUrl);
         if (checkSumUrl == null) {
             checksumFile.createNewFile();

@@ -27,23 +27,29 @@ package io.github.slimjar.resolver.strategy;
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.util.Repositories;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
 
 public final class MavenPathResolutionStrategy implements PathResolutionStrategy {
-    private static final String PATH_FORMAT = "%s%s/%s/%s/%3$s-%4$s.jar";
+    @NotNull private static final String PATH_FORMAT = "%s%s/%s/%s/%3$s-%4$s.jar";
+
     @Override
-    public Collection<String> pathTo(Repository repository, Dependency dependency) {
-        final String repoUrl = Repositories.fetchFormattedUrl(repository);
+    @Contract(pure = true)
+    public @NotNull Collection<@NotNull String> pathTo(
+        @NotNull final Repository repository,
+        @NotNull final Dependency dependency
+    ) {
         return Collections.singleton(
-                String.format(
-                        PATH_FORMAT,
-                        repoUrl,
-                        dependency.groupId().replace('.', '/'),
-                        dependency.artifactId(),
-                        dependency.version()
-                )
+            String.format(
+                PATH_FORMAT,
+                Repositories.fetchFormattedUrl(repository),
+                dependency.groupId().replace('.', '/'),
+                dependency.artifactId(),
+                dependency.version()
+            )
         );
     }
 }

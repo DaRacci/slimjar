@@ -26,22 +26,34 @@ package io.github.slimjar.resolver.strategy;
 
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Locale;
 import java.util.stream.Collectors;
 
 public final class MavenChecksumPathResolutionStrategy implements PathResolutionStrategy {
-    private final PathResolutionStrategy resolutionStrategy;
-    private final String algorithm;
+    @NotNull private final PathResolutionStrategy resolutionStrategy;
+    @NotNull private final String algorithm;
 
-    public MavenChecksumPathResolutionStrategy(final String algorithm, final PathResolutionStrategy resolutionStrategy) {
+    @Contract(pure = true)
+    public MavenChecksumPathResolutionStrategy(
+        @NotNull final String algorithm,
+        @NotNull final PathResolutionStrategy resolutionStrategy
+    ) {
         this.algorithm = algorithm.replaceAll("[ -]", "").toLowerCase(Locale.ENGLISH);
         this.resolutionStrategy = resolutionStrategy;
     }
 
     @Override
-    public Collection<String> pathTo(final Repository repository, final Dependency dependency) {
-        return resolutionStrategy.pathTo(repository, dependency).stream().map(path -> path + "." + algorithm).collect(Collectors.toSet());
+    @Contract(pure = true)
+    public @NotNull Collection<@NotNull String> pathTo(
+        @NotNull final Repository repository,
+        @NotNull final Dependency dependency
+    ) {
+        return resolutionStrategy.pathTo(repository, dependency).stream()
+            .map(path -> path + "." + algorithm)
+            .collect(Collectors.toSet());
     }
 }

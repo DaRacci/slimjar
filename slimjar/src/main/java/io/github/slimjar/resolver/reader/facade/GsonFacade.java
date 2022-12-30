@@ -24,10 +24,19 @@
 
 package io.github.slimjar.resolver.reader.facade;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 
 public interface GsonFacade {
-    <T> T fromJson(final InputStreamReader reader, final Class<T> clazz) throws ReflectiveOperationException;
-    <T> T fromJson(final InputStreamReader reader, final Type rawType) throws ReflectiveOperationException;
+    <T> @NotNull T fromJson(
+        @NotNull final InputStreamReader reader,
+        @NotNull final Class<T> clazz
+    ) throws ReflectiveOperationException;
+
+    <T> @NotNull T fromJson(
+        @NotNull final InputStreamReader reader,
+        @NotNull final Type rawType
+    ) throws ReflectiveOperationException;
 }

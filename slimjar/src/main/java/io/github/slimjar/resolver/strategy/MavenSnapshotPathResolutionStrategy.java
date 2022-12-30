@@ -27,35 +27,42 @@ package io.github.slimjar.resolver.strategy;
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.util.Repositories;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Collection;
 
 public final class MavenSnapshotPathResolutionStrategy implements PathResolutionStrategy {
-    private static final String PATH_FORMAT_ALT = "%s%s/%s/%s-SNAPSHOT/%4$s-%s/%3$s-%4$s-%5$s.jar";
-    private static final String PATH_FORMAT = "%s%s/%s/%s-SNAPSHOT/%3$s-%4$s-%5$s.jar";
+    @NotNull private static final String PATH_FORMAT_ALT = "%s%s/%s/%s-SNAPSHOT/%4$s-%s/%3$s-%4$s-%5$s.jar";
+    @NotNull private static final String PATH_FORMAT = "%s%s/%s/%s-SNAPSHOT/%3$s-%4$s-%5$s.jar";
 
 
     @Override
-    public Collection<String> pathTo(final Repository repository, final Dependency dependency) {
-        final String repoUrl = Repositories.fetchFormattedUrl(repository);
-        final String version = dependency.version().replace("-SNAPSHOT", "");
-        final String alt = String.format(
-                PATH_FORMAT_ALT,
-                repoUrl,
-                dependency.groupId().replace('.', '/'),
-                dependency.artifactId(),
-                version,
-                dependency.snapshotId()
+    @Contract(pure = true)
+    public @NotNull Collection<@NotNull String> pathTo(
+        @NotNull final Repository repository,
+        @NotNull final Dependency dependency
+    ) {
+        final var repoUrl = Repositories.fetchFormattedUrl(repository);
+        final var version = dependency.version().replace("-SNAPSHOT", "");
+        final var alt = String.format(
+            PATH_FORMAT_ALT,
+            repoUrl,
+            dependency.groupId().replace('.', '/'),
+            dependency.artifactId(),
+            version,
+            dependency.snapshotId()
         );
-        final String general = String.format(
-                PATH_FORMAT,
-                repoUrl,
-                dependency.groupId().replace('.', '/'),
-                dependency.artifactId(),
-                version,
-                dependency.snapshotId()
+        final var general = String.format(
+            PATH_FORMAT,
+            repoUrl,
+            dependency.groupId().replace('.', '/'),
+            dependency.artifactId(),
+            version,
+            dependency.snapshotId()
         );
+
         return Arrays.asList(general, alt);
     }
 

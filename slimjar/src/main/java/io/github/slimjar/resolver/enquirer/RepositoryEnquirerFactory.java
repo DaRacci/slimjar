@@ -25,8 +25,9 @@
 package io.github.slimjar.resolver.enquirer;
 
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.NotNull;
 
 @FunctionalInterface
 public interface RepositoryEnquirerFactory {
-    RepositoryEnquirer create(final Repository repository);
+    @NotNull RepositoryEnquirer create(@NotNull final Repository repository);
 }
