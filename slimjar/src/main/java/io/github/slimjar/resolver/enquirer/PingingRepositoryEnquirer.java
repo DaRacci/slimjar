@@ -31,22 +31,26 @@ import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.resolver.strategy.PathResolutionStrategy;
 import io.github.slimjar.resolver.pinger.URLPinger;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 
 public record PingingRepositoryEnquirer(
-    Repository repository,
-    PathResolutionStrategy dependencyURLCreationStrategy,
-    PathResolutionStrategy checksumURLCreationStrategy,
-    PathResolutionStrategy pomURLCreationStrategy,
-    URLPinger urlPinger
+    @NotNull Repository repository,
+    @NotNull PathResolutionStrategy dependencyURLCreationStrategy,
+    @NotNull PathResolutionStrategy checksumURLCreationStrategy,
+    @NotNull PathResolutionStrategy pomURLCreationStrategy,
+    @NotNull URLPinger urlPinger
 
 ) implements RepositoryEnquirer {
-    private static final ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
+    private static final @NotNull ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
 
     @Override
-    public ResolutionResult enquire(final Dependency dependency) {
+    @Contract(pure = true)
+    public @NotNull ResolutionResult enquire(final @NotNull Dependency dependency) {
         LOGGER.debug("Enquiring repositories to find %s", dependency.artifactId());
 
         return dependencyURLCreationStrategy.pathTo(repository, dependency)
@@ -71,11 +75,12 @@ public record PingingRepositoryEnquirer(
         );
     }
 
-    private URL createURL(final String path) {
+    @Contract(pure = true)
+    private @Nullable URL createURL(@NotNull final String path) {
         try {
-            return new URL(path);
-        } catch (final MalformedURLException e) {
-            LOGGER.debug("Failed to create URL from path %s", path);
+            return new URL(repository.url(), path);
+        } catch (final MalformedURLException ignored) {
+            LOGGER.error("Failed to create URL for %s", path);
             return null;
         }
     }

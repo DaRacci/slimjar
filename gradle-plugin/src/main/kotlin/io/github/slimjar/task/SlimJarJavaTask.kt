@@ -5,26 +5,29 @@ import io.github.slimjar.SlimJarPlugin.Companion.SLIM_CONFIGURATION_NAME
 import io.github.slimjar.extension.SlimJarJavaExtension
 import io.github.slimjar.targetedJarTask
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.TaskAction
 import org.gradle.kotlin.dsl.getByType
+import org.gradle.kotlin.dsl.setProperty
 import java.io.File
 import javax.inject.Inject
 
 public open class SlimJarJavaTask @Inject constructor() : SlimJarTask() {
-    public final override val buildDirectory: File = project.buildDir
-
-    public final override val outputDirectory: File = buildDirectory.resolve("resources/slimjar/")
+    public final override val outputDirectory: File = project.buildDir.resolve("resources/slimjar/").also(File::mkdirs)
 
     // Only one configuration will be present for pure Java projects.
     @Transient public final override val slimJarExtension: SlimJarJavaExtension = project.extensions.getByType()
 
-    public final override val slimjarConfigurations: List<Configuration> = arrayOf(SLIM_CONFIGURATION_NAME, SLIM_API_CONFIGURATION_NAME).mapNotNull {
-        project.configurations.findByName(it.get())
-    }
+    @Transient
+    public final override val slimjarConfigurations: SetProperty<Configuration> = project.objects.setProperty<Configuration>()
+        .convention(arrayOf(SLIM_CONFIGURATION_NAME, SLIM_API_CONFIGURATION_NAME).mapNotNull { project.configurations.findByName(it.get()) })
+        .also(SetProperty<*>::disallowChanges)
 
     init {
         group = TASK_GROUP
         inputs.files(slimjarConfigurations)
+        outputs.files(outputDirectory)
+
         dependsOn(project.tasks.targetedJarTask)
     }
 
@@ -34,7 +37,6 @@ public open class SlimJarJavaTask @Inject constructor() : SlimJarTask() {
             target.tasks.targetedJarTask.apply {
                 val archive = outputs.files.singleFile
 
-                ensureOutputDir()
                 with(outputDirectory.resolve("${target.name}.isolated-jar")) {
                     archive.copyTo(this, true)
                     withShadowTask { from(this) }

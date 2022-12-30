@@ -26,10 +26,15 @@ package io.github.slimjar.resolver.mirrors;
 
 import io.github.slimjar.resolver.data.Mirror;
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.MalformedURLException;
 import java.util.Collection;
 
+@FunctionalInterface
 public interface MirrorSelector {
-    Collection<Repository> select(final Collection<Repository> mainRepositories, final Collection<Mirror> mirrors) throws MalformedURLException;
+    @NotNull Collection<@NotNull Repository> select(
+        @NotNull final Collection<@NotNull Repository> mainRepositories,
+        @NotNull final Collection<@NotNull Mirror> mirrors
+    ) throws MalformedURLException;
 }

@@ -25,22 +25,26 @@
 package io.github.slimjar.resolver;
 
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public final class UnresolvedDependencyException extends RuntimeException {
+    @NotNull private final transient Dependency dependency;
 
-    private final transient Dependency dependency;
-
-    public UnresolvedDependencyException(final Dependency dependency) {
+    @Contract(pure = true)
+    public UnresolvedDependencyException(final @NotNull Dependency dependency) {
         super("Could not resolve dependency : " + dependency);
         this.dependency = dependency;
     }
 
-    public Dependency getDependency() {
+    @Contract(pure = true)
+    public @NotNull Dependency dependency() {
         return dependency;
     }
 
     @Override
-    public String toString() {
+    @Contract(pure = true)
+    public @NotNull String toString() {
         return String.format("UnresolvedDependencyException{dependency=%s}", dependency);
     }
 }

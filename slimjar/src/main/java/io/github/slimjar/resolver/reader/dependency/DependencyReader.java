@@ -26,10 +26,12 @@ package io.github.slimjar.resolver.reader.dependency;
 
 
 import io.github.slimjar.resolver.data.DependencyData;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
 
+@FunctionalInterface
 public interface DependencyReader {
-    DependencyData read(InputStream inputStream) throws IOException, ReflectiveOperationException;
+    @NotNull DependencyData read(@NotNull final InputStream inputStream) throws IOException, ReflectiveOperationException;
 }

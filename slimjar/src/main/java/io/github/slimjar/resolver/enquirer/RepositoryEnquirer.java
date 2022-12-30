@@ -26,7 +26,10 @@ package io.github.slimjar.resolver.enquirer;
 
 import io.github.slimjar.resolver.ResolutionResult;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
+@FunctionalInterface
 public interface RepositoryEnquirer {
-    ResolutionResult enquire(final Dependency dependency);
+    @Nullable ResolutionResult enquire(@NotNull final Dependency dependency);
 }

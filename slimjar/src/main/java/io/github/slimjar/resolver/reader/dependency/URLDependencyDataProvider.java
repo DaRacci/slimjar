@@ -26,37 +26,43 @@ package io.github.slimjar.resolver.reader.dependency;
 
 
 import io.github.slimjar.resolver.data.DependencyData;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
-import java.net.URLConnection;
 
 public final class URLDependencyDataProvider implements DependencyDataProvider {
     private final DependencyReader dependencyReader;
     private final URL depFileURL;
     private DependencyData cachedData = null;
 
-    public URLDependencyDataProvider(final DependencyReader dependencyReader, final URL depFileURL) {
+    @Contract(pure = true)
+    public URLDependencyDataProvider(
+        @NotNull final DependencyReader dependencyReader,
+        @NotNull final URL depFileURL
+    ) {
         this.dependencyReader = dependencyReader;
         this.depFileURL = depFileURL;
     }
 
-    public DependencyReader getDependencyReader() {
+    @Contract(pure = true)
+    public @NotNull DependencyReader getDependencyReader() {
         return dependencyReader;
     }
 
     @Override
-    public DependencyData get() throws IOException, ReflectiveOperationException {
+    @Contract(pure = true)
+    public @NotNull DependencyData get() throws IOException, ReflectiveOperationException {
         if (cachedData != null) {
             return cachedData;
         }
 
-        URLConnection connection = depFileURL.openConnection();
+        final var connection = depFileURL.openConnection();
         // Do not cache so we can re-read (ex during some form of reload) from this jar file if it changes.
         connection.setUseCaches(false);
 
-        try (InputStream is = connection.getInputStream()) {
+        try (final var is = connection.getInputStream()) {
             cachedData = dependencyReader.read(is);
             return cachedData;
         }

@@ -24,18 +24,17 @@
 
 package io.github.slimjar.util;
 
-public final class Packages {
+import org.jetbrains.annotations.NotNull;
 
-    private Packages() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("This class is not meant to be instantiated");
-    }
+public final class Packages {
+    private Packages() {}
 
     /**
      * This exists to bypass relocation so that original classes can be mapped back
      * @param input package name separated by #
      * @return proper package name
      */
-    public static String fix(final String input) {
+    public static @NotNull String fix(@NotNull final String input) {
         return input.replace('#', '.');
     }
 }

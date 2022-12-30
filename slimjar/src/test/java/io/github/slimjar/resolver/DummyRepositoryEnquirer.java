@@ -24,21 +24,27 @@
 
 package io.github.slimjar.resolver;
 
+import io.github.slimjar.logging.LogDispatcher;
+import io.github.slimjar.logging.ProcessLogger;
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.resolver.enquirer.RepositoryEnquirer;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 
 public final class DummyRepositoryEnquirer implements RepositoryEnquirer {
+    private static final @NotNull ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
+
     @Override
-    public ResolutionResult enquire(final Dependency dependency) {
+    public @Nullable ResolutionResult enquire(final @NotNull Dependency dependency) {
         final String groupPath = dependency.groupId().replace('.', '/');
         try {
             return new ResolutionResult(new Repository(new URL("https://repo.tld")), new URL(String.format("https://repo.tld/%s/%s/%s/%2$s-%3$s.jar", groupPath, dependency.artifactId(), dependency.version())), null, false, false);
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to create dummy URL", e);
             return null;
         }
     }

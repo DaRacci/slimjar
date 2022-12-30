@@ -26,10 +26,11 @@ package io.github.slimjar.resolver;
 
 
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
 @FunctionalInterface
 public interface DependencyResolver {
-    Optional<ResolutionResult> resolve(final Dependency dependency);
+    @NotNull Optional<ResolutionResult> resolve(@NotNull final Dependency dependency);
 }

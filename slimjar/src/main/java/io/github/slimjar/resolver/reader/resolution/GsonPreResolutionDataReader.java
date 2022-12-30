@@ -3,6 +3,8 @@ package io.github.slimjar.resolver.reader.resolution;
 import io.github.slimjar.resolver.ResolutionResult;
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
 import io.github.slimjar.resolver.reader.facade.TypeToken;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,18 +12,15 @@ import java.io.InputStreamReader;
 import java.lang.reflect.Type;
 import java.util.Map;
 
-public final class GsonPreResolutionDataReader implements PreResolutionDataReader {
-
-    private final GsonFacade gson;
-
-    public GsonPreResolutionDataReader(final GsonFacade gson) {
-        this.gson = gson;
-    }
+public record GsonPreResolutionDataReader(
+    @NotNull GsonFacade gsonFacade
+) implements PreResolutionDataReader {
 
     @Override
-    public Map<String, ResolutionResult> read(final InputStream inputStream) throws IOException, ReflectiveOperationException {
+    @Contract(pure = true)
+    public @NotNull Map<String, ResolutionResult> read(final @NotNull InputStream inputStream) throws IOException, ReflectiveOperationException {
         final InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-        final Type rawType = new TypeToken<Map<String, ResolutionResult>>(){}.getRawType();
-        return gson.fromJson(inputStreamReader, rawType);
+        final Type rawType = new TypeToken<Map<String, ResolutionResult>>(){}.rawType();
+        return gsonFacade.fromJson(inputStreamReader, rawType);
     }
 }

@@ -24,8 +24,32 @@
 
 package io.github.slimjar.logging;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 @FunctionalInterface
 public interface ProcessLogger {
-    void log(final String message, final Object... args);
-    default void debug(final String message, final Object... args) { }
+
+    void info(
+        @NotNull String message,
+        @Nullable Object... args
+    );
+
+    default void debug(
+        @NotNull final String message,
+        @Nullable final Object... args
+    ) { }
+
+    default void error(
+        @NotNull final String message,
+        @Nullable final Object... args
+    ) { }
+
+
+    /** Use the info method to log information about the process. */
+    @Deprecated(since = "2.0.0", forRemoval = true)
+    default void log(
+        @NotNull final String message,
+        @Nullable final Object... args
+    ) { info(message, args); }
 }

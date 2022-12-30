@@ -25,6 +25,8 @@
 package io.github.slimjar.util;
 
 import io.github.slimjar.app.module.ModuleExtractor;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -37,34 +39,36 @@ import java.util.stream.Stream;
 
 public final class Modules {
 
-    private Modules() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("This class is not meant to be instantiated");
-    }
+    private Modules() {}
 
-    public static URL findModule(final String moduleName) {
+    public static @Nullable URL findModule(@NotNull final String moduleName) {
         final ClassLoader classLoader = Modules.class.getClassLoader();
         return classLoader.getResource(moduleName + ".isolated-jar");
     }
 
-    public static URL[] extract(final ModuleExtractor extractor, final Collection<String> modules) throws IOException {
-        final URL[] urls = new URL[modules.size()];
+    public static @NotNull URL[] extract(
+        @NotNull final ModuleExtractor extractor,
+        @NotNull final Collection<@NotNull String> modules
+    ) throws IOException {
+        final var urls = new URL[modules.size()];
         int index = 0;
-        for (final String moduleName : modules) {
-            final URL modulePath = findModule(moduleName);
-            final URL extractedModule = extractor.extractModule(modulePath, moduleName);
+        for (final var moduleName : modules) {
+            final var modulePath = findModule(moduleName);
+            final var extractedModule = extractor.extractModule(modulePath, moduleName);
             urls[index++] = extractedModule;
         }
+
         return urls;
     }
 
-    public static Collection<String> findLocalModules() throws URISyntaxException, IOException {
-        final URL url = Modules.class.getProtectionDomain().getCodeSource().getLocation();
-        final Path resourcesPath = Paths.get(url.toURI());
+    public static @NotNull Collection<@NotNull String> findLocalModules() throws URISyntaxException, IOException {
+        final var url = Modules.class.getProtectionDomain().getCodeSource().getLocation();
+        final var resourcesPath = Paths.get(url.toURI());
 
-        try (Stream<Path> stream = Files.walk(resourcesPath, 1)) {
+        try (final var stream = Files.walk(resourcesPath, 1)) {
             return stream.filter(path -> path.endsWith(".isolated-jar"))
-                    .map(path -> path.getFileName().toString())
-                    .toList();
+                .map(path -> path.getFileName().toString())
+                .toList();
         }
     }
 }

@@ -32,6 +32,7 @@ import io.github.slimjar.resolver.CachingDependencyResolver
 import io.github.slimjar.resolver.ResolutionResult
 import io.github.slimjar.resolver.data.Dependency
 import io.github.slimjar.resolver.data.DependencyData
+import io.github.slimjar.resolver.data.Mirror
 import io.github.slimjar.resolver.data.Repository
 import io.github.slimjar.resolver.enquirer.PingingRepositoryEnquirerFactory
 import io.github.slimjar.resolver.mirrors.SimpleMirrorSelector
@@ -54,28 +55,32 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.buildClassSerialDescriptor
+import kotlinx.serialization.descriptors.element
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import org.gradle.api.DefaultTask
-import org.gradle.api.GradleException
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvableDependencies
 import org.gradle.api.artifacts.dsl.RepositoryHandler
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository
+import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.CacheableTask
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputDirectory
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.OutputDirectory
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.diagnostics.internal.graph.nodes.RenderableDependency
 import org.gradle.api.tasks.diagnostics.internal.graph.nodes.RenderableModuleResult
 import java.io.File
 import javax.inject.Inject
-import kotlin.jvm.Throws
 
 @CacheableTask
 @OptIn(ExperimentalSerializationApi::class)
@@ -85,18 +90,14 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
         public const val TASK_GROUP: String = "slimJar"
     }
 
-    @get:InputDirectory
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    public abstract val buildDirectory: File
-
     @get:OutputDirectory
     public abstract val outputDirectory: File
 
     @get:Internal
     public abstract val slimJarExtension: SlimJarExtension
 
-    @get:Input
-    public abstract val slimjarConfigurations: List<Configuration>
+    @get:Internal
+    public abstract val slimjarConfigurations: SetProperty<Configuration>
 
     /**
      * Action to generate the json file inside the jar
@@ -104,12 +105,10 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
     @TaskAction
     internal fun createJson() = with(project) {
         val repositories = repositories.getMavenRepos()
-        val dependencies = slimjarConfigurations.flatMap { it.incoming.getSlimDependencies() }
+        val dependencies = slimjarConfigurations.get().flatMap { it.incoming.getSlimDependencies() }
 
-        ensureOutputDir()
         with(outputDirectory.resolve("slimjar.json")) {
             val dependencyData = DependencyData(slimJarExtension.mirrors.get(), repositories, dependencies, slimJarExtension.relocations.get())
-            outputs.file(this)
             outputStream().use { Json.encodeToStream(dependencyData, it) }
             withShadowTask { from(this) }
         }
@@ -124,7 +123,7 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
             file.inputStream().use(Json::decodeFromStream)
         } else mutableMapOf()
 
-        val dependencies = slimjarConfigurations.flatMap { it.incoming.getSlimDependencies() }.toMutableSet().flatten()
+        val dependencies = slimjarConfigurations.get().flatMap { it.incoming.getSlimDependencies() }.toMutableSet().flatten()
         val repositories = repositories.getMavenRepos()
 
         val releaseStrategy = MavenPathResolutionStrategy()
@@ -152,7 +151,7 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
             dependencies.asFlow()
                 .filter {
                     preResolved[it.toString()]?.let { pre ->
-                        repositories.none { r -> pre.repository.url().toString() == r.url().toString() }
+                        repositories.repository { r -> pre.repository.url().toString() == r.url().toString() }
                     } ?: true
                 }.concurrentMap(this, 16) {
                     it.toString() to resolver.resolve(it).orElse(null)
@@ -161,9 +160,7 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
 
         preResolved.forEach { result.putIfAbsent(it.key, it.value) }
 
-        ensureOutputDir()
         with(file) {
-            outputs.file(this)
             outputStream().use { Json.encodeToStream(result, it) }
             withShadowTask { from(this) }
         }
@@ -225,14 +222,44 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
         .buffer(concurrencyLevel)
         .map { it.await() }
 
-    @Throws(GradleException::class)
-    protected fun ensureOutputDir() {
-        if (outputDirectory.exists() || outputDirectory.mkdirs()) return
-
-        throw GradleException("Failed to create output directory: ${outputDirectory.absolutePath}")
-    }
-
     protected open fun withShadowTask(
         action: ShadowJar.() -> Unit
     ): ShadowJar? = (project.tasks.findByName(maybePrefix(null, null, "shadowJar")) as? ShadowJar)?.apply(action)
+
+    private object DependencyDataSerializer : KSerializer<DependencyData> {
+        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("DependencyData") {
+            element<List<Mirror>>("mirrors")
+            element<List<Repository>>("repositories")
+            element<List<Dependency>>("dependencies")
+        }
+
+        override fun deserialize(decoder: Decoder): DependencyData {
+            val input = decoder.beginStructure(descriptor)
+            var mirrors: List<Mirror>? = null
+            var repositories: List<Repository>? = null
+            var dependencies: List<Dependency>? = null
+            while (true) {
+                when (val index = input.decodeElementIndex(descriptor)) {
+                    CompositeDecoder.DECODE_DONE -> break
+                    0 -> mirrors = input.decodeSerializableElement(descriptor, index, ListSerializer(MirrorSerializer))
+                    1 -> repositories = input.decodeSerializableElement(descriptor, index, ListSerializer(RepositorySerializer))
+                    2 -> dependencies = input.decodeSerializableElement(descriptor, index, ListSerializer(DependencySerializer))
+                    else -> error("Unexpected index: $index")
+                }
+            }
+            input.endStructure(descriptor)
+            return DependencyData(mirrors!!, repositories!!, dependencies!!, emptyList())
+        }
+
+        override fun serialize(
+            encoder: Encoder,
+            value: DependencyData
+        ) {
+            encoder.encodeStructure(descriptor) {
+                encodeSerializableElement(descriptor, 0, ListSerializer(Mirror.serializer()), value.mirrors())
+                encodeSerializableElement(descriptor, 1, ListSerializer(Repository.serializer()), value.repositories())
+                encodeSerializableElement(descriptor, 2, ListSerializer(Dependency.serializer()), value.dependencies())
+            }
+        }
+    }
 }

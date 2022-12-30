@@ -24,28 +24,32 @@
 
 package io.github.slimjar.resolver.data;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.net.URL;
 import java.util.Objects;
 
 public record Mirror(
-    URL mirroring,
-    URL original
+    @NotNull URL mirroring,
+    @NotNull URL original
 ) {
 
     @Override
-    public String toString() {
-        return "Mirror{" +
-            "mirror=" + mirroring +
-            ", original=" + original +
-            '}';
+    @Contract(pure = true)
+    public @NotNull String toString() {
+        return "Mirror{" + "mirroring=" + mirroring + ", original=" + original + '}';
     }
 
     @Override
-    public boolean equals(final Object o) {
+    @Contract(value = "null -> false", pure = true)
+    public boolean equals(@Nullable final Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final Mirror mirror1 = (Mirror) o;
-        return Objects.equals(mirroring, mirror1.mirroring) && Objects.equals(original, mirror1.original);
+        if (!(o instanceof Mirror mirror)) return false;
+
+        return Objects.equals(mirroring, mirror.mirroring)
+            && Objects.equals(original, mirror.original);
     }
 
 }

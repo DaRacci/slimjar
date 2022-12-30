@@ -34,6 +34,8 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Optional;
+
+import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
@@ -52,19 +54,19 @@ public class DependencyResolverTest {
         final Collection<Repository> repositories = Collections.singleton(new Repository(new URL("https://repo.tld/")));
         final DependencyResolver dependencyResolver = new CachingDependencyResolver(new URLPinger() {
             @Override
-            public boolean ping(URL url) {
+            public boolean ping(@NotNull URL url) {
                 return true;
             }
 
             @Override
-            public boolean isSupported(URL url) {
+            public boolean isSupported(@NotNull URL url) {
                 return true;
             }
         }, repositories, repositoryEnquirerFactory, Collections.emptyMap());
         final Dependency testDependency = new Dependency("a.b.c", "d", "1.0", null, Collections.emptyList());
         final Optional<ResolutionResult> url = dependencyResolver.resolve(testDependency);
         final String groupPath = testDependency.groupId().replace('.', '/');
-        Assertions.assertEquals(url.get().getDependencyURL().toString(), String.format("https://repo.tld/%s/%s/%s/%2$s-%3$s.jar", groupPath, testDependency.artifactId(), testDependency.version()));
+        Assertions.assertEquals(url.get().dependencyURL().toString(), String.format("https://repo.tld/%s/%s/%s/%2$s-%3$s.jar", groupPath, testDependency.artifactId(), testDependency.version()));
     }
 
     @Test
@@ -73,18 +75,18 @@ public class DependencyResolverTest {
         final Collection<Repository> repositories = Collections.singleton(new Repository(new URL("https://repo.tld/")));
         final DependencyResolver dependencyResolver = new CachingDependencyResolver(new URLPinger() {
             @Override
-            public boolean ping(URL url) {
+            public boolean ping(@NotNull URL url) {
                 return true;
             }
 
             @Override
-            public boolean isSupported(URL url) {
+            public boolean isSupported(@NotNull URL url) {
                 return true;
             }
         }, repositories, repositoryEnquirerFactory, Collections.emptyMap());
         final Dependency testDependency = new Dependency("a.b.c", "d", "1.0", null, Collections.emptyList());
-        final URL url1 = dependencyResolver.resolve(testDependency).get().getDependencyURL();
-        final URL url2 = dependencyResolver.resolve(testDependency).get().getDependencyURL();
+        final URL url1 = dependencyResolver.resolve(testDependency).get().dependencyURL();
+        final URL url2 = dependencyResolver.resolve(testDependency).get().dependencyURL();
 
         Assertions.assertEquals(url1, url2, "Impure resolution: Instance");
     }

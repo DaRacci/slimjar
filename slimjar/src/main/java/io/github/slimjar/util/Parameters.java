@@ -24,19 +24,19 @@
 
 package io.github.slimjar.util;
 
+import org.jetbrains.annotations.NotNull;
+
 public final class Parameters {
+    private Parameters() {}
 
-    private Parameters() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("This class is not meant to be instantiated");
-    }
-
-    public static Class<?>[] typesFrom(final Object... args) {
-        Class<?>[] result = new Class[args.length];
+    public static @NotNull Class<?>[] typesFrom(@NotNull final Object... args) {
+        final var result = new Class[args.length];
         for (int i = 0; i < args.length; i++) {
             Object current = args[i];
             if (current == null) continue;
             result[i] = current.getClass();
         }
+
         return result;
     }
 }

@@ -24,48 +24,43 @@
 
 package io.github.slimjar.resolver.data;
 
-import java.io.IOException;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 
-public final class Repository {
+public record Repository(@NotNull URL url) {
     public static final String CENTRAL_URL = "https://repo1.maven.org/maven2/";
-
     private static Repository centralInstance;
-    private URL url;
 
-    public Repository(URL url) {
-        this.url = url;
-    }
-
-    public URL url() {
-        return url;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Repository that = (Repository) o;
-        return url.equals(that.url);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(url);
-    }
-
-    @Override
-    public String toString() {
-        return "Repository{" +
-            ", url='" + url + '\'' +
-            '}';
-    }
-
-    public static Repository central() throws IOException {
+    @Contract(pure = true)
+    public static @NotNull Repository central() {
         if (centralInstance == null) {
-            centralInstance = new Repository(new URL(CENTRAL_URL));
+            try {
+                centralInstance = new Repository(new URL(CENTRAL_URL));
+            } catch (final MalformedURLException ignored) {
+                // This shouldn't ever happen, just caught to make compiler happy.
+            }
         }
+
         return centralInstance;
+    }
+
+    @Override
+    @Contract(pure = true)
+    public boolean equals(@Nullable final Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Repository otherRepository)) return false;
+
+        return Objects.equals(url, otherRepository.url);
+    }
+
+    @Override
+    @Contract(pure = true)
+    public @NotNull String toString() {
+        return "Repository{" + ", url='" + url + '\'' + '}';
     }
 }

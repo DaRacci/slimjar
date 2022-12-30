@@ -26,23 +26,23 @@ package io.github.slimjar.resolver.reader.dependency;
 
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
 import io.github.slimjar.resolver.reader.facade.GsonFacadeFactory;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
 
-public final class GsonDependencyDataProviderFactory implements DependencyDataProviderFactory {
-    private final GsonFacade gson;
+public record GsonDependencyDataProviderFactory(
+    @NotNull GsonFacade gsonFacade
+) implements DependencyDataProviderFactory {
 
-    public GsonDependencyDataProviderFactory(final GsonFacadeFactory gsonFactory) throws ReflectiveOperationException {
+    @Contract(pure = true)
+    public GsonDependencyDataProviderFactory(@NotNull final GsonFacadeFactory gsonFactory) throws ReflectiveOperationException {
         this(gsonFactory.createFacade());
     }
 
-    public GsonDependencyDataProviderFactory(final GsonFacade gson) {
-        this.gson = gson;
-    }
-
-
-    public DependencyDataProvider create(final URL dependencyFileURL) {
-        final DependencyReader dependencyReader = new GsonDependencyReader(gson);
+    @Contract(pure = true)
+    public @NotNull DependencyDataProvider create(@NotNull final URL dependencyFileURL) {
+        final var dependencyReader = new GsonDependencyReader(gsonFacade);
         return new URLDependencyDataProvider(dependencyReader, dependencyFileURL);
     }
 }

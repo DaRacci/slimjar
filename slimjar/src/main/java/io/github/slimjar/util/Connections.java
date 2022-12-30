@@ -24,34 +24,37 @@
 
 package io.github.slimjar.util;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 
 public final class Connections {
+    private Connections() {}
 
-    private Connections() throws UnsupportedOperationException {
-        throw new UnsupportedOperationException("This class is not meant to be instantiated");
-    }
+    @NotNull private static final String SLIMJAR_USER_AGENT = "SlimjarApplication/* URLDependencyDownloader";
 
-    private static final String SLIMJAR_USER_AGENT = "SlimjarApplication/* URLDependencyDownloader";
+    public static @NotNull URLConnection createDownloadConnection(@NotNull final URL url) throws IOException {
+        final var connection =  url.openConnection();
 
-    public static URLConnection createDownloadConnection(final URL url) throws IOException {
-        final URLConnection connection =  url.openConnection();
-        if (connection instanceof HttpURLConnection httpConnection) {
-            connection.addRequestProperty("User-Agent", SLIMJAR_USER_AGENT);
-            final int responseCode = httpConnection.getResponseCode();
-
-            if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw new IOException("Could not download from" + url);
-            }
+        if (!(connection instanceof HttpURLConnection httpConnection)) {
+            return connection;
         }
+
+        connection.addRequestProperty("User-Agent", SLIMJAR_USER_AGENT);
+        final int responseCode = httpConnection.getResponseCode();
+
+        if (responseCode != HttpURLConnection.HTTP_OK) {
+            throw new IOException("Could not download from" + url); // TODO: Better exception
+        }
+
         return connection;
     }
-    public static void tryDisconnect(final URLConnection urlConnection) {
-        if (urlConnection instanceof HttpURLConnection httpURLConnection) {
-            httpURLConnection.disconnect();
-        }
+
+    public static void tryDisconnect(@NotNull final URLConnection urlConnection) {
+        if (!(urlConnection instanceof HttpURLConnection httpURLConnection)) return;
+        httpURLConnection.disconnect();
     }
 }

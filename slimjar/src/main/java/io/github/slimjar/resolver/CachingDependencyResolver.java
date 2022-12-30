@@ -32,41 +32,54 @@ import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.enquirer.RepositoryEnquirer;
 import io.github.slimjar.resolver.enquirer.RepositoryEnquirerFactory;
 import io.github.slimjar.resolver.pinger.URLPinger;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 public final class CachingDependencyResolver implements DependencyResolver {
-    private static final String FAILED_RESOLUTION_MESSAGE = "[FAILED TO RESOLVE]";
-    private static final ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
-    private final URLPinger urlPinger;
-    private final Collection<RepositoryEnquirer> repositories;
-    private final Map<Dependency, ResolutionResult> cachedResults = new ConcurrentHashMap<>();
-    private final Map<String, ResolutionResult> preResolvedResults;
+    @NotNull private static final ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
+    @NotNull private final URLPinger urlPinger;
+    @NotNull private final Collection<@NotNull RepositoryEnquirer> repositories;
+    @NotNull private final Map<Dependency, ResolutionResult> cachedResults = new ConcurrentHashMap<>();
+    @NotNull private final Map<String, ResolutionResult> preResolvedResults;
 
-    public CachingDependencyResolver(final URLPinger urlPinger, final Collection<Repository> repositories, final RepositoryEnquirerFactory enquirerFactory, final Map<String, ResolutionResult> preResolvedResults) {
+    @Contract(pure = true)
+    public CachingDependencyResolver(
+        @NotNull final URLPinger urlPinger,
+        @NotNull final Collection<@NotNull Repository> repositories,
+        @NotNull final RepositoryEnquirerFactory enquirerFactory,
+        @NotNull final Map<String, ResolutionResult> preResolvedResults
+    ) {
         this.urlPinger = urlPinger;
         this.preResolvedResults = new ConcurrentHashMap<>(preResolvedResults);
         this.repositories = repositories.stream()
-                .map(enquirerFactory::create)
-                .collect(Collectors.toSet());
+            .map(enquirerFactory::create)
+            .collect(Collectors.toSet());
     }
 
     @Override
-    public Optional<ResolutionResult> resolve(final Dependency dependency) {
+    @Contract(pure = true)
+    public @NotNull Optional<ResolutionResult> resolve(@NotNull final Dependency dependency) {
         return Optional.ofNullable(cachedResults.computeIfAbsent(dependency, this::attemptResolve));
     }
 
-    private ResolutionResult attemptResolve(final Dependency dependency) {
+    @Contract(pure = true)
+    private @Nullable ResolutionResult attemptResolve(@NotNull final Dependency dependency) {
         final var preResolvedResult = preResolvedResults.get(dependency.toString()) != null ? preResolvedResults.get(dependency.toString()) : cachedResults.get(dependency);
 
         if (preResolvedResult != null) {
-            if (preResolvedResult.isChecked()) return preResolvedResult;
-            if (preResolvedResult.isAggregator()) return preResolvedResult;
+            if (preResolvedResult.checked()) return preResolvedResult;
+            if (preResolvedResult.aggregator()) return preResolvedResult;
 
-            final var isDependencyValid = urlPinger.ping(preResolvedResult.getDependencyURL());
-            final var isChecksumValid = preResolvedResult.getChecksumURL() == null || urlPinger.ping(preResolvedResult.getChecksumURL());
+            final var isDependencyValid = urlPinger.ping(preResolvedResult.dependencyURL());
+            final var isChecksumValid = preResolvedResult.checksumURL() == null || urlPinger.ping(preResolvedResult.checksumURL());
 
             if (isDependencyValid && isChecksumValid) {
                 preResolvedResult.setChecked();
@@ -75,14 +88,15 @@ public final class CachingDependencyResolver implements DependencyResolver {
         }
 
         final var result = repositories.stream().parallel()
-                .map(repositoryEnquirer -> repositoryEnquirer.enquire(dependency))
-                .filter(Objects::nonNull)
-                .findFirst();
-        final var resolvedResult = result.map(ResolutionResult::getDependencyURL)
-                .map(Objects::toString)
-                .orElse(FAILED_RESOLUTION_MESSAGE);
+            .map(repositoryEnquirer -> repositoryEnquirer.enquire(dependency))
+            .filter(Objects::nonNull)
+            .findFirst();
 
-        LOGGER.log("Resolved %s @ %s", dependency.artifactId(), resolvedResult);
+        final var resolvedResult = result.map(ResolutionResult::dependencyURL)
+            .map(Objects::toString)
+            .orElse("[FAILED TO RESOLVE]");
+
+        LOGGER.info("Resolved %s @ %s", dependency.artifactId(), resolvedResult);
         return result.orElse(null);
     }
 }
