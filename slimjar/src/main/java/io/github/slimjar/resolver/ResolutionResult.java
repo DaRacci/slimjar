@@ -25,52 +25,56 @@
 package io.github.slimjar.resolver;
 
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URL;
 import java.util.Objects;
 
 public final class ResolutionResult {
-    private final Repository repository;
-    private final URL dependencyURL;
-    private final URL checksumURL;
-    private final boolean isAggregator;
+    @NotNull private final Repository repository;
+    @Nullable private final URL dependencyURL;
+    @Nullable private final URL checksumURL;
+    private final boolean aggregator;
     private transient boolean checked;
 
+    @Contract(pure = true)
     public ResolutionResult(
-            final Repository repository,
-            final URL dependencyURL,
-            final URL checksumURL,
-            final boolean isAggregator,
-            final boolean checked
+        @NotNull final Repository repository,
+        @Nullable final URL dependencyURL,
+        @Nullable final URL checksumURL,
+        final boolean aggregator,
+        final boolean checked
     ) {
         this.repository = repository;
         this.dependencyURL = dependencyURL;
         this.checksumURL = checksumURL;
-        this.isAggregator = isAggregator;
+        this.aggregator = aggregator;
         this.checked = checked;
 
-        if (!isAggregator) {
+        if (!aggregator) {
             Objects.requireNonNull(dependencyURL, "Resolved URL must not be null for non-aggregator dependencies");
         }
     }
 
-    public Repository getRepository() {
+    public @NotNull Repository repository() {
         return repository;
     }
 
-    public URL getDependencyURL() {
+    public @Nullable URL dependencyURL() {
         return dependencyURL;
     }
 
-    public URL getChecksumURL() {
+    public @Nullable URL checksumURL() {
         return checksumURL;
     }
 
-    public boolean isAggregator() {
-        return isAggregator;
+    public boolean aggregator() {
+        return aggregator;
     }
 
-    public boolean isChecked() {
+    public boolean checked() {
         return checked;
     }
 
@@ -79,19 +83,26 @@ public final class ResolutionResult {
     }
 
     @Override
-    public boolean equals(final Object o) {
+    @Contract(pure = true)
+    public boolean equals(@Nullable final Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        ResolutionResult that = (ResolutionResult) o;
+        if (!(o instanceof ResolutionResult otherResult)) return false;
+
         // String comparison to avoid all blocking calls
-        return dependencyURL.toString().equals(that.toString()) &&
-                Objects.equals(checksumURL.toString(), that.checksumURL.toString()) &&
-                isAggregator == that.isAggregator &&
-                checked == that.checked;
+        return Objects.equals(dependencyURL != null ? dependencyURL.toString() : null, otherResult.dependencyURL != null ? otherResult.dependencyURL.toString() : null) &&
+            Objects.equals(checksumURL != null ? checksumURL.toString() : null, otherResult.checksumURL != null ? otherResult.checksumURL.toString() : null) &&
+            aggregator == otherResult.aggregator &&
+            checked == otherResult.checked;
     }
 
     @Override
+    @Contract(pure = true)
     public int hashCode() {
-        return Objects.hash(dependencyURL.toString(), checksumURL.toString(), isAggregator, checked);
+        return Objects.hash(
+            dependencyURL != null ? dependencyURL.toString() : null,
+            checksumURL != null ? checksumURL.toString() : null,
+            aggregator,
+            checked
+        );
     }
 }
