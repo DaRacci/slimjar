@@ -1,12 +1,11 @@
 package io.github.slimjar.task
 
-import arrow.core.flattenOption
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import io.github.slimjar.extension.SlimJarExtension
 import io.github.slimjar.extensions.maybePrefix
 import io.github.slimjar.extensions.nullableTargetTask
-import io.github.slimjar.extensions.slimApiConfiguration
-import io.github.slimjar.extensions.slimConfiguration
+import io.github.slimjar.extensions.slimApiConfigurationName
+import io.github.slimjar.extensions.slimConfigurationName
 import io.github.slimjar.extensions.slimJar
 import io.github.slimjar.extensions.targetTask
 import org.gradle.api.artifacts.Configuration
@@ -26,11 +25,11 @@ public open class SlimJarMultiplatformTask @Inject constructor(
 
     final override val outputDirectory: File = buildDirectory.resolve("slimjar/")
 
-    final override val slimJarExtension: SlimJarExtension = target.slimJar
+    @Transient final override val slimJarExtension: SlimJarExtension = target.slimJar
 
     final override val slimjarConfigurations: List<Configuration> = target.compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
-        listOf(set.slimConfiguration, set.slimApiConfiguration)
-    }.flattenOption()
+        listOf(target.project.configurations[set.slimConfigurationName], target.project.configurations[set.slimApiConfigurationName])
+    }
 
     init {
         group = TASK_GROUP

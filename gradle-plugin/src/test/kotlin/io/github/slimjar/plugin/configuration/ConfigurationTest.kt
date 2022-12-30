@@ -24,10 +24,12 @@
 
 package io.github.slimjar.plugin.configuration
 
-import io.github.slimjar.plugin.SLIM_CONFIG_NAME
+import io.github.slimjar.SlimJarPlugin
 import io.github.slimjar.plugin.applyPlugins
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
+import org.gradle.api.plugins.JavaLibraryPlugin
+import org.gradle.kotlin.dsl.apply
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -35,31 +37,34 @@ import org.junit.jupiter.api.TestInstance
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ConfigurationTest {
 
-    private val project = ProjectBuilder.builder().build().also { it.applyPlugins() }
+    private val project = ProjectBuilder.builder().build().also {
+        it.apply<JavaLibraryPlugin>()
+        it.applyPlugins()
+    }
 
     @Test
     fun `Test slim configuration exists`() {
-        val config = project.configurations.findByName(SLIM_CONFIG_NAME)
+        val config = project.configurations.findByName(SlimJarPlugin.SLIM_CONFIGURATION_NAME.get())
         assertThat(config).isNotNull
     }
 
-    /*@Test
+    @Test
     fun `Test slimApi configuration exists`() {
-        val config = project.configurations.findByName(SIM_API_CONFIG_NAME)
+        val config = project.configurations.findByName(SlimJarPlugin.SLIM_API_CONFIGURATION_NAME.get())
         assertThat(config).isNotNull
-    }*/
+    }
 
     @Test
     fun `Test add slim dependency`() {
         assertThatCode {
-            project.dependencies.add(SLIM_CONFIG_NAME, "com.google.code.gson:gson:2.8.6")
+            project.dependencies.add(SlimJarPlugin.SLIM_CONFIGURATION_NAME.get(), "com.google.code.gson:gson:2.8.6")
         }.doesNotThrowAnyException()
     }
 
-    /*@Test
+    @Test
     fun `Test add slimApi dependency`() {
         assertThatCode {
-            project.dependencies.add(SIM_API_CONFIG_NAME, "com.google.code.gson:gson:2.8.6")
+            project.dependencies.add(SlimJarPlugin.SLIM_API_CONFIGURATION_NAME.get(), "com.google.code.gson:gson:2.8.6")
         }.doesNotThrowAnyException()
-    }*/
+    }
 }

@@ -76,7 +76,7 @@ public val KotlinTarget.slimJarTask: String
     get() = SLIM_JAR_TASK_NAME.forTarget(this)
 
 public val KotlinTarget.slimJar: SlimJarExtension
-    get() = project.tasks.getByName<SlimJarExtension>(SLIM_EXTENSION_NAME.forTarget(this))
+    get() = project.extensions.getByName<SlimJarExtension>(SLIM_EXTENSION_NAME.forTarget(this))
 
 @PublishedApi
 internal fun KotlinSourceSet.project(): Project {
