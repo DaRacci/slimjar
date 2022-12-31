@@ -61,7 +61,8 @@ public final class TemporaryModuleExtractor implements ModuleExtractor {
         }
     }
 
-    private @NotNull JarURLConnection openConnection(@NotNull final URL url) {
+    @Contract(value = "_ -> new", pure = true)
+    private @NotNull JarURLConnection openConnection(@NotNull final URL url) throws ModuleExtractorException {
         try {
             final URLConnection connection = url.openConnection();
             return (JarURLConnection) connection;
@@ -72,8 +73,8 @@ public final class TemporaryModuleExtractor implements ModuleExtractor {
         }
     }
 
-    @Contract(pure = true)
-    private @NotNull File createTempFile(@NotNull final String name) {
+    @Contract(value = "_ -> new", pure = true)
+    private @NotNull File createTempFile(@NotNull final String name) throws ModuleExtractorException {
         try {
             final var tempFile = File.createTempFile(name, ".jar");
             tempFile.deleteOnExit();
