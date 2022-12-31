@@ -22,11 +22,16 @@
 // SOFTWARE.
 //
 
-package io.github.slimjar.app.module;
+package io.github.slimjar.exceptions;
 
 
-public final class ModuleNotFoundException extends RuntimeException {
-    public ModuleNotFoundException(String moduleName) {
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
+public final class ModuleNotFoundException extends ModuleExtractorException {
+
+    @Contract(pure = true)
+    public ModuleNotFoundException(@NotNull final String moduleName) {
         super("Could not find module in jar: " + moduleName);
     }
 }
