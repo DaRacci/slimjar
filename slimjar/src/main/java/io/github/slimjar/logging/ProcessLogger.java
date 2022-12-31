@@ -31,8 +31,8 @@ import org.jetbrains.annotations.Nullable;
 public interface ProcessLogger {
 
     void info(
-        @NotNull String message,
-        @Nullable Object... args
+        @NotNull final String message,
+        @Nullable final Object... args
     );
 
     default void debug(
