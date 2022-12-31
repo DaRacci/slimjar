@@ -24,40 +24,49 @@
 
 package io.github.slimjar.logging;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 
 public final class MediatingProcessLogger implements ProcessLogger {
-    private final Collection<ProcessLogger> loggers;
+    @NotNull private final Collection<@NotNull ProcessLogger> loggers;
 
-    public MediatingProcessLogger(final Collection<ProcessLogger> loggers) {
+    @Contract(pure = true)
+    public MediatingProcessLogger(@NotNull final Collection<@NotNull ProcessLogger> loggers) {
         this.loggers = loggers;
     }
 
     @Override
-    public void log(final @NotNull String message, final Object... args) {
-        for (final ProcessLogger logger : loggers) {
-            logger.log(message, args);
-        }
-    }
+    public void info(
+        @NotNull final String message,
+        @Nullable final Object... args
+    ) { loggers.forEach(logger -> logger.info(message, args)); }
 
     @Override
-    public void debug(final @NotNull String message, final @Nullable Object @Nullable ... args) {
-        for (final ProcessLogger logger : loggers) {
-            logger.debug(message, args);
-        }
-    }
+    public void debug(
+        final @NotNull String message,
+        final @Nullable Object @Nullable ... args
+    ) { loggers.forEach(logger -> logger.debug(message, args)); }
 
-    public void addLogger(final ProcessLogger logger) {
+    @Override
+    public void error(
+        @NotNull String message,
+        @Nullable Object... args
+    ) { loggers.forEach(logger -> logger.error(message, args)); }
+
+    @Contract(pure = true)
+    public void addLogger(@NotNull final ProcessLogger logger) {
         this.loggers.add(logger);
     }
 
-    public void removeLogger(final ProcessLogger logger) {
+    @Contract(pure = true)
+    public void removeLogger(@NotNull final ProcessLogger logger) {
         this.loggers.remove(logger);
     }
 
+    @Contract(pure = true)
     public void clearLoggers() {
         this.loggers.clear();
     }

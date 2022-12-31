@@ -61,15 +61,15 @@ public final class ChecksumDependencyVerifier implements DependencyVerifier {
     @Override
     public boolean verify(final File file, final Dependency dependency) throws IOException, InterruptedException {
         if (!file.exists()) return false;
-        LOGGER.log("Verifying checksum for %s", dependency.artifactId());
+        LOGGER.info("Verifying checksum for %s", dependency.artifactId());
         final File checksumFile = outputWriterFactory.getStrategy().selectFileFor(dependency);
         checksumFile.getParentFile().mkdirs();
         if (!checksumFile.exists() && !prepareChecksumFile(checksumFile, dependency)) {
-            LOGGER.log("Unable to resolve checksum for %s, falling back to fallbackVerifier!", dependency.artifactId());
+            LOGGER.info("Unable to resolve checksum for %s, falling back to fallbackVerifier!", dependency.artifactId());
             return fallbackVerifier.verify(file, dependency);
         }
         if (checksumFile.length() == 0L) {
-            LOGGER.log("Required checksum not found for %s, using fallbackVerifier!", dependency.artifactId());
+            LOGGER.info("Required checksum not found for %s, using fallbackVerifier!", dependency.artifactId());
             return fallbackVerifier.verify(file, dependency);
         }
         final String actualChecksum = checksumCalculator.calculate(file);
@@ -77,7 +77,7 @@ public final class ChecksumDependencyVerifier implements DependencyVerifier {
         LOGGER.debug("%s -> Actual checksum: %s;", dependency.artifactId(), actualChecksum);
         LOGGER.debug("%s -> Expected checksum: %s;", dependency.artifactId(), expectedChecksum);
         final boolean match = Objects.equals(actualChecksum, expectedChecksum);
-        LOGGER.log("Checksum %s for %s", match ? "matched" : "match failed", dependency.artifactId());
+        LOGGER.info("Checksum %s for %s", match ? "matched" : "match failed", dependency.artifactId());
         return Objects.equals(actualChecksum, expectedChecksum);
     }
 
@@ -95,7 +95,7 @@ public final class ChecksumDependencyVerifier implements DependencyVerifier {
         if (result.isEmpty()) return false;
 
         final URL checkSumUrl = result.get().checksumURL();
-        LOGGER.log("Resolved checksum URL for %s as %s", dependency.artifactId(), checkSumUrl);
+        LOGGER.info("Resolved checksum URL for %s as %s", dependency.artifactId(), checkSumUrl);
         if (checkSumUrl == null) {
             checksumFile.createNewFile();
             return true;
@@ -105,7 +105,7 @@ public final class ChecksumDependencyVerifier implements DependencyVerifier {
         final OutputWriter outputWriter = outputWriterFactory.create(dependency);
         outputWriter.writeFrom(inputStream, connection.getContentLength());
         Connections.tryDisconnect(connection);
-        LOGGER.log("Downloaded checksum for %s", dependency.artifactId());
+        LOGGER.info("Downloaded checksum for %s", dependency.artifactId());
 
         return true;
     }
