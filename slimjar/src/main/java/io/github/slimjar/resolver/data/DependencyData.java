@@ -25,6 +25,7 @@
 package io.github.slimjar.resolver.data;
 
 import io.github.slimjar.relocation.RelocationRule;
+import kotlinx.serialization.Serializable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +34,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
+@Serializable
 public record DependencyData(
     @NotNull Collection<Mirror> mirrors,
     @NotNull Collection<Repository> repositories,

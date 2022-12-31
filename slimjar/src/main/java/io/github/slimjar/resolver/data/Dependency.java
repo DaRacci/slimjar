@@ -25,6 +25,7 @@
 package io.github.slimjar.resolver.data;
 
 import io.github.slimjar.exceptions.NotComparableDependencyException;
+import kotlinx.serialization.Serializable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 
+@Serializable
 public record Dependency(
     @NotNull String groupId,
     @NotNull String artifactId,
