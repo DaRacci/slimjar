@@ -24,11 +24,16 @@
 
 package io.github.slimjar.downloader;
 
+import io.github.slimjar.exceptions.DownloaderException;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
+@FunctionalInterface
 public interface DependencyDownloader {
-    File download(final Dependency dependency) throws IOException, InterruptedException;
+    @NotNull Optional<File> download(@NotNull final Dependency dependency) throws DownloaderException;
 }

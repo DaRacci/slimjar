@@ -24,31 +24,35 @@
 
 package io.github.slimjar.injector.loader;
 
+import io.github.slimjar.exceptions.InjectorException;
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLClassLoader;
 
 public final class WrappedInjectableClassLoader implements Injectable {
-    private final URLClassLoader urlClassLoader;
-    private final Method addURLMethod;
+    @NotNull private final URLClassLoader urlClassLoader;
+    @NotNull private final Method addURLMethod;
 
-    public WrappedInjectableClassLoader(final URLClassLoader urlClassLoader) {
-        Method methodDefer;
+    public WrappedInjectableClassLoader(@NotNull final URLClassLoader urlClassLoader) throws InjectorException {
         this.urlClassLoader = urlClassLoader;
         try {
-            methodDefer = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
-        } catch (NoSuchMethodException e) {
-            e.printStackTrace();
-            methodDefer = null;
+            this.addURLMethod = URLClassLoader.class.getDeclaredMethod("addURL", URL.class);
+        } catch (final NoSuchMethodException err) {
+            throw new InjectorException("Unable to find addURL method", err);
         }
-        this.addURLMethod = methodDefer;
     }
 
-
     @Override
-    public void inject(final URL url) throws InvocationTargetException, IllegalAccessException {
+    public void inject(@NotNull final URL url) throws InjectorException {
         addURLMethod.setAccessible(true);
-        addURLMethod.invoke(urlClassLoader, url);
+        try {
+            addURLMethod.invoke(urlClassLoader, url);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+            // Shouldn't be possible.
+            throw new InjectorException("Unable to invoke addURL method", e);
+        }
     }
 }

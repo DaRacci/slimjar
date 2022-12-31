@@ -24,25 +24,47 @@
 
 package io.github.slimjar.resolver.reader.dependency;
 
+import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
 import io.github.slimjar.resolver.reader.facade.GsonFacadeFactory;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.URL;
+import java.util.Objects;
 
-public record GsonDependencyDataProviderFactory(
-    @NotNull GsonFacade gsonFacade
-) implements DependencyDataProviderFactory {
+public final class GsonDependencyDataProviderFactory implements DependencyDataProviderFactory {
+    @NotNull private final GsonFacade gsonFacade;
 
     @Contract(pure = true)
-    public GsonDependencyDataProviderFactory(@NotNull final GsonFacadeFactory gsonFactory) throws ReflectiveOperationException {
-        this(gsonFactory.createFacade());
+    public GsonDependencyDataProviderFactory(@NotNull final GsonFacadeFactory gsonFactory) throws ResolutionException {
+        this.gsonFacade = DependencyDataProviderFactory.fromFactory(gsonFactory);
     }
 
-    @Contract(pure = true)
+    @Contract(value = "_ -> new", pure = true)
     public @NotNull DependencyDataProvider create(@NotNull final URL dependencyFileURL) {
         final var dependencyReader = new GsonDependencyReader(gsonFacade);
         return new URLDependencyDataProvider(dependencyReader, dependencyFileURL);
     }
+
+    @Override
+    public boolean equals(@Nullable final Object obj) {
+        if (obj == this) return true;
+        if (!(obj instanceof GsonDependencyDataProviderFactory that)) return false;
+
+        return Objects.equals(this.gsonFacade, that.gsonFacade);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(gsonFacade);
+    }
+
+    @Override
+    public String toString() {
+        return "GsonDependencyDataProviderFactory[" +
+            "gsonFacade=" + gsonFacade + ']';
+    }
+
 }

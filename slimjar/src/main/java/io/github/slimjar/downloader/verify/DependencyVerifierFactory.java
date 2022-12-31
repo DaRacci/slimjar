@@ -25,7 +25,9 @@
 package io.github.slimjar.downloader.verify;
 
 import io.github.slimjar.resolver.DependencyResolver;
+import org.jetbrains.annotations.NotNull;
 
+@FunctionalInterface
 public interface DependencyVerifierFactory {
-    DependencyVerifier create(final DependencyResolver resolver);
+    @NotNull DependencyVerifier create(@NotNull final DependencyResolver resolver);
 }

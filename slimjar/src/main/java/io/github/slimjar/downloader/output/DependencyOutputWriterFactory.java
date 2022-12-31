@@ -24,31 +24,37 @@
 
 package io.github.slimjar.downloader.output;
 
-import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.downloader.strategy.FilePathStrategy;
-import java.io.File;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import io.github.slimjar.logging.LocationAwareProcessLogger;
+import io.github.slimjar.logging.ProcessLogger;
+import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public final class DependencyOutputWriterFactory implements OutputWriterFactory {
-    private static final Logger LOGGER = Logger.getLogger(DependencyOutputWriterFactory.class.getName());
-    private final FilePathStrategy outputFilePathStrategy;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private final FilePathStrategy outputFilePathStrategy;
 
-    public DependencyOutputWriterFactory(final FilePathStrategy filePathStrategy) {
+    @Contract(pure = true)
+    public DependencyOutputWriterFactory(@NotNull final FilePathStrategy filePathStrategy) {
         this.outputFilePathStrategy = filePathStrategy;
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
-    public OutputWriter create(final Dependency dependency) {
-        LOGGER.log(Level.FINEST, "Creating OutputWriter for {0}", dependency.artifactId());
-        final File outputFile = outputFilePathStrategy.selectFileFor(dependency);
+    @Contract(value = "_ -> new", pure = true)
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public @NotNull OutputWriter create(@NotNull final Dependency dependency) {
+        LOGGER.debug("Creating OutputWriter for %s", dependency.artifactId());
+
+        final var outputFile = outputFilePathStrategy.selectFileFor(dependency);
         outputFile.getParentFile().mkdirs();
+
         return new ChanneledFileOutputWriter(outputFile);
     }
 
     @Override
-    public FilePathStrategy getStrategy() {
+    @Contract(pure = true)
+    public @NotNull FilePathStrategy getStrategy() {
         return outputFilePathStrategy;
     }
 }

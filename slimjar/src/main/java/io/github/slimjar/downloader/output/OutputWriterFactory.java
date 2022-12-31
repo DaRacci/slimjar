@@ -27,8 +27,9 @@ package io.github.slimjar.downloader.output;
 
 import io.github.slimjar.downloader.strategy.FilePathStrategy;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.NotNull;
 
 public interface OutputWriterFactory {
-    OutputWriter create(final Dependency param);
-    FilePathStrategy getStrategy();
+    @NotNull OutputWriter create(@NotNull final Dependency param);
+    @NotNull FilePathStrategy getStrategy();
 }

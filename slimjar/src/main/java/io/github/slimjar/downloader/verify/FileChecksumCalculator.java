@@ -24,55 +24,80 @@
 
 package io.github.slimjar.downloader.verify;
 
+import io.github.slimjar.exceptions.VerificationException;
+import io.github.slimjar.logging.LocationAwareProcessLogger;
+import io.github.slimjar.logging.ProcessLogger;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+// TODO: Possibly implement a thread group to calculate checksums in batches.
 public final class FileChecksumCalculator implements ChecksumCalculator {
-    private static final String DIRECTORY_HASH = "DIRECTORY";
-    private static final Logger LOGGER = Logger.getLogger(FileChecksumCalculator.class.getName());
-    private final MessageDigest digest;
-    private final ReentrantReadWriteLock lock;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private static final String DIRECTORY_HASH = "DIRECTORY";
 
-    public FileChecksumCalculator(final String algorithm) throws NoSuchAlgorithmException {
-        digest = MessageDigest.getInstance(algorithm);
-        lock = new ReentrantReadWriteLock(false);
+    @NotNull private final ThreadLocal<MessageDigest> digestThreadLocal;
+
+    @Contract(pure = true)
+    public FileChecksumCalculator(@NotNull final String algorithm) throws VerificationException {
+        final MessageDigest templateDigest;
+        try {
+            templateDigest = MessageDigest.getInstance(algorithm);
+        } catch (final NoSuchAlgorithmException e) {
+            // This should never happen, as the algorithm isn't proved by the user.
+            throw new VerificationException("Failed to initialize checksum calculator", e);
+        }
+
+        digestThreadLocal = ThreadLocal.withInitial(() -> {
+            try {
+                return (MessageDigest) templateDigest.clone();
+            } catch (final CloneNotSupportedException err) {
+                // This should never happen.
+                throw new VerificationException("Failed to clone digest template for thread local use.", err);
+            }
+        });
     }
 
     @Override
-    public String calculate(final File file) throws IOException, InterruptedException {
-        LOGGER.log(Level.FINEST, "Calculating hash for {0}", file.getPath());
+    @Contract(pure = true)
+    public @NotNull String calculate(@NotNull final File file) throws VerificationException {
+        LOGGER.debug("Calculating hash for %s", file.getPath());
+
         // This helps run IDE environment as a special case
         if (file.isDirectory()) {
             return DIRECTORY_HASH;
         }
 
-        lock.writeLock().tryLock(10, TimeUnit.SECONDS);
-        digest.reset();
-        try (final FileInputStream fis = new FileInputStream(file)) {
+        // TODO: Ensure this is safe like this.
+        final var digest = digestThreadLocal.get();
+
+        try (final var stream = new FileInputStream(file)) {
             byte[] byteArray = new byte[1024];
             int bytesCount;
-            while ((bytesCount = fis.read(byteArray)) != -1) {
+            while ((bytesCount = stream.read(byteArray)) != -1) {
                 digest.update(byteArray, 0, bytesCount);
             }
+        } catch (final IOException err) {
+            throw new VerificationException("Encountered error while reading checksum file %s.".formatted(file.getPath()), err);
         }
-        byte[] bytes = digest.digest();
-        lock.writeLock().unlock();
 
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
+        final var bytes = digest.digest();
+        final var sb = new StringBuilder();
+        for (final var b : bytes) {
             sb.append(Integer.toString((b & 0xff) + 0x100, 16).substring(1));
         }
+
         sb.trimToSize();
-        final String result = sb.toString();
-        LOGGER.log(Level.FINEST, "Hash for {0} -> {1}", new Object[]{file.getPath(), result});
+        final var result = sb.toString();
+
+        LOGGER.debug("Hash for %s -> %s", file.getPath(), result);
+
+        digestThreadLocal.remove();
         return result;
     }
 }

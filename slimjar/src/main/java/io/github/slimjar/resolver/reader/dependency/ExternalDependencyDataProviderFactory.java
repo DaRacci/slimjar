@@ -24,6 +24,7 @@
 
 package io.github.slimjar.resolver.reader.dependency;
 
+import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
 import io.github.slimjar.resolver.reader.facade.GsonFacadeFactory;
 import org.jetbrains.annotations.Contract;
@@ -31,16 +32,16 @@ import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
 
-public record ExternalDependencyDataProviderFactory(
-    @NotNull GsonFacade gsonFacade
-) implements DependencyDataProviderFactory {
+public final class ExternalDependencyDataProviderFactory implements DependencyDataProviderFactory {
+    @NotNull private final GsonFacade gsonFacade;
 
     @Contract(pure = true)
-    public ExternalDependencyDataProviderFactory(@NotNull final GsonFacadeFactory gsonFactory) throws ReflectiveOperationException {
-        this(gsonFactory.createFacade());
+    public ExternalDependencyDataProviderFactory(@NotNull final GsonFacadeFactory gsonFactory) throws ResolutionException {
+        this.gsonFacade = DependencyDataProviderFactory.fromFactory(gsonFactory);
     }
 
-    @Contract(pure = true)
+    @Override
+    @Contract(value = "_ -> new", pure = true)
     public @NotNull DependencyDataProvider create(@NotNull final URL dependencyFileURL) {
         final var dependencyReader = new GsonDependencyReader(gsonFacade);
         return new ModuleDependencyDataProvider(dependencyReader, dependencyFileURL);

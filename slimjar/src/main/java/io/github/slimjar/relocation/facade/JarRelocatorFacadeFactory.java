@@ -25,11 +25,16 @@
 package io.github.slimjar.relocation.facade;
 
 import io.github.slimjar.relocation.RelocationRule;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 
 public interface JarRelocatorFacadeFactory {
-    JarRelocatorFacade createFacade(final File input, final File output, final Collection<RelocationRule> relocationRules) throws IllegalAccessException, InstantiationException, InvocationTargetException;
+    @NotNull JarRelocatorFacade createFacade(
+        @NotNull final File input,
+        @NotNull final File output,
+        @NotNull final Collection<RelocationRule> relocationRules
+    ) throws IllegalAccessException, InstantiationException, InvocationTargetException;
 }

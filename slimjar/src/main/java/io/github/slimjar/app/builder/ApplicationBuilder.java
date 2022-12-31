@@ -28,26 +28,25 @@ import io.github.slimjar.app.Application;
 import io.github.slimjar.downloader.DependencyDownloaderFactory;
 import io.github.slimjar.downloader.URLDependencyDownloaderFactory;
 import io.github.slimjar.downloader.output.DependencyOutputWriterFactory;
-import io.github.slimjar.downloader.output.OutputWriterFactory;
 import io.github.slimjar.downloader.strategy.ChecksumFilePathStrategy;
 import io.github.slimjar.downloader.strategy.FilePathStrategy;
-import io.github.slimjar.downloader.verify.*;
+import io.github.slimjar.downloader.verify.ChecksumDependencyVerifierFactory;
+import io.github.slimjar.downloader.verify.DependencyVerifierFactory;
+import io.github.slimjar.downloader.verify.FileChecksumCalculator;
+import io.github.slimjar.downloader.verify.PassthroughDependencyVerifierFactory;
 import io.github.slimjar.injector.DependencyInjector;
 import io.github.slimjar.injector.DependencyInjectorFactory;
 import io.github.slimjar.injector.SimpleDependencyInjectorFactory;
 import io.github.slimjar.injector.helper.InjectionHelperFactory;
 import io.github.slimjar.injector.loader.Injectable;
 import io.github.slimjar.logging.LogDispatcher;
-import io.github.slimjar.logging.MediatingProcessLogger;
 import io.github.slimjar.logging.ProcessLogger;
 import io.github.slimjar.relocation.JarFileRelocatorFactory;
 import io.github.slimjar.relocation.RelocatorFactory;
-import io.github.slimjar.relocation.facade.JarRelocatorFacadeFactory;
 import io.github.slimjar.relocation.facade.ReflectiveJarRelocatorFacadeFactory;
 import io.github.slimjar.relocation.helper.RelocationHelperFactory;
 import io.github.slimjar.relocation.helper.VerifyingRelocationHelperFactory;
 import io.github.slimjar.relocation.meta.FlatFileMetaMediatorFactory;
-import io.github.slimjar.relocation.meta.MetaMediatorFactory;
 import io.github.slimjar.resolver.CachingDependencyResolverFactory;
 import io.github.slimjar.resolver.DependencyResolverFactory;
 import io.github.slimjar.resolver.data.Repository;
@@ -56,67 +55,59 @@ import io.github.slimjar.resolver.enquirer.RepositoryEnquirerFactory;
 import io.github.slimjar.resolver.mirrors.MirrorSelector;
 import io.github.slimjar.resolver.mirrors.SimpleMirrorSelector;
 import io.github.slimjar.resolver.pinger.HttpURLPinger;
-import io.github.slimjar.resolver.pinger.URLPinger;
+import io.github.slimjar.resolver.reader.dependency.DependencyDataProvider;
 import io.github.slimjar.resolver.reader.dependency.DependencyDataProviderFactory;
 import io.github.slimjar.resolver.reader.dependency.ExternalDependencyDataProviderFactory;
 import io.github.slimjar.resolver.reader.dependency.GsonDependencyDataProviderFactory;
-import io.github.slimjar.resolver.reader.dependency.DependencyDataProvider;
-import io.github.slimjar.resolver.reader.facade.GsonFacadeFactory;
 import io.github.slimjar.resolver.reader.facade.ReflectiveGsonFacadeFactory;
 import io.github.slimjar.resolver.reader.resolution.GsonPreResolutionDataProviderFactory;
 import io.github.slimjar.resolver.reader.resolution.PreResolutionDataProvider;
 import io.github.slimjar.resolver.reader.resolution.PreResolutionDataProviderFactory;
-import io.github.slimjar.resolver.strategy.*;
+import io.github.slimjar.resolver.strategy.MavenChecksumPathResolutionStrategy;
+import io.github.slimjar.resolver.strategy.MavenPathResolutionStrategy;
+import io.github.slimjar.resolver.strategy.MavenPomPathResolutionStrategy;
+import io.github.slimjar.resolver.strategy.MavenSnapshotPathResolutionStrategy;
+import io.github.slimjar.resolver.strategy.MediatingPathResolutionStrategy;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Objects;
 
 /**
  * Serves as a configuration for different components slimjar will use during injection.
  * Allows completely modifying and adding upon onto the default behaviour when needed.
  */
 public abstract class ApplicationBuilder {
-    // Default directory where slimjar will try to install dependencies to
-    // ~/.slimjar/
-    private static final Path DEFAULT_DOWNLOAD_DIRECTORY;
+    @NotNull private static final Path DEFAULT_DOWNLOAD_DIRECTORY = Path.of(System.getProperty("user.home"), ".slimjar");
 
-    static {
-        final String userHome = System.getProperty("user.home");
-        final String defaultPath = String.format("%s/.slimjar", userHome);
-        DEFAULT_DOWNLOAD_DIRECTORY = new File(defaultPath).toPath();
-    }
-
-    private final String applicationName;
-    private URL dependencyFileUrl;
-    private URL preResolutionFileUrl;
-    private Path downloadDirectoryPath;
-    private RelocatorFactory relocatorFactory;
-    private DependencyDataProviderFactory moduleDataProviderFactory;
-    private DependencyDataProviderFactory dataProviderFactory;
-    private PreResolutionDataProviderFactory preResolutionDataProviderFactory;
-    private RelocationHelperFactory relocationHelperFactory;
-    private DependencyInjectorFactory injectorFactory;
-    private DependencyResolverFactory resolverFactory;
-    private RepositoryEnquirerFactory enquirerFactory;
-    private DependencyDownloaderFactory downloaderFactory;
-    private DependencyVerifierFactory verifierFactory;
-    private MirrorSelector mirrorSelector;
-    private ProcessLogger logger;
+    @NotNull private final String applicationName;
+    @Nullable private URL dependencyFileUrl;
+    @Nullable private URL preResolutionFileUrl;
+    @Nullable private Path downloadDirectoryPath;
+    @Nullable private RelocatorFactory relocatorFactory;
+    @Nullable private DependencyDataProviderFactory moduleDataProviderFactory;
+    @Nullable private DependencyDataProviderFactory dataProviderFactory;
+    @Nullable private PreResolutionDataProviderFactory preResolutionDataProviderFactory;
+    @Nullable private RelocationHelperFactory relocationHelperFactory;
+    @Nullable private DependencyInjectorFactory injectorFactory;
+    @Nullable private DependencyResolverFactory resolverFactory;
+    @Nullable private RepositoryEnquirerFactory enquirerFactory;
+    @Nullable private DependencyDownloaderFactory downloaderFactory;
+    @Nullable private DependencyVerifierFactory verifierFactory;
+    @Nullable private MirrorSelector mirrorSelector;
+    @Nullable private ProcessLogger logger;
 
     /**
      * Generate a application builder for an application with given name.
      * @param applicationName Name of your application/project. This exists to uniquely identify relocations.
      */
-    protected ApplicationBuilder(final String applicationName) {
-        this.applicationName = Objects.requireNonNull(applicationName, "Requires non-null application name!");
+    @Contract(pure = true)
+    protected ApplicationBuilder(@NotNull final String applicationName) {
+        this.applicationName = applicationName;
     }
 
     /**
@@ -126,7 +117,12 @@ public abstract class ApplicationBuilder {
      * @param args Arguments to pass to created Application class (specified in <code>config</code>).
      * @return ApplicationBuilder that allows jar-in-jar dependency loading.
      */
-    public static ApplicationBuilder isolated(final String name, final IsolationConfiguration config, Object[] args) {
+    @Contract(value = "_, _, _ -> new", pure = true)
+    public static @NotNull ApplicationBuilder isolated(
+        @NotNull final String name,
+        @NotNull final IsolationConfiguration config,
+        @Nullable Object... args
+    ) {
         return new IsolatedApplicationBuilder(name, config, args);
     }
 
@@ -135,7 +131,8 @@ public abstract class ApplicationBuilder {
      * @param name Name of your application/project. This exists to uniquely identify relocations.
      * @return ApplicationBuilder that allows loading into current classloader.
      */
-    public static ApplicationBuilder appending(final String name) {
+    @Contract(value = "_ -> new", pure = true)
+    public static @NotNull ApplicationBuilder appending(@NotNull final String name) {
         return InjectingApplicationBuilder.createAppending(name);
     }
 
@@ -147,7 +144,11 @@ public abstract class ApplicationBuilder {
      * @param name Name of your application/project. This exists to uniquely identify relocations.
      * @return ApplicationBuilder that allows loading into any given {@link Injectable} instance.
      */
-    public static ApplicationBuilder injecting(final String name, final Injectable injectable) {
+    @Contract(value = "_, _ -> new")
+    public static @NotNull ApplicationBuilder injecting(
+        @NotNull final String name,
+        @NotNull final Injectable injectable
+    ) {
         return new InjectingApplicationBuilder(name, injectable);
     }
 
@@ -156,7 +157,8 @@ public abstract class ApplicationBuilder {
      * @param dependencyFileUrl URL to the json configuration file (Default being slimjar.json inside jar root generated by the gradle plugin)
      * @return <code>this</code>
      */
-    public final ApplicationBuilder dependencyFileUrl(final URL dependencyFileUrl) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder dependencyFileUrl(@NotNull final URL dependencyFileUrl) {
         this.dependencyFileUrl = dependencyFileUrl;
         return this;
     }
@@ -166,7 +168,8 @@ public abstract class ApplicationBuilder {
      * @param preResolutionFileUrl URL to the json resolution configuration file (Default being slimjar-resolutions.json inside jar root generated by the gradle plugin)
      * @return <code>this</code>
      */
-    public final ApplicationBuilder preResolutionFileUrl(final URL preResolutionFileUrl) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder preResolutionFileUrl(@NotNull final URL preResolutionFileUrl) {
         this.preResolutionFileUrl = preResolutionFileUrl;
         return this;
     }
@@ -176,7 +179,8 @@ public abstract class ApplicationBuilder {
      * @param downloadDirectoryPath Download directory for dependencies.
      * @return <code>this</code>
      */
-    public final ApplicationBuilder downloadDirectoryPath(final Path downloadDirectoryPath) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder downloadDirectoryPath(@NotNull final Path downloadDirectoryPath) {
         this.downloadDirectoryPath = downloadDirectoryPath;
         return this;
     }
@@ -188,7 +192,8 @@ public abstract class ApplicationBuilder {
      * @param relocatorFactory Factory class to create Relocator
      * @return <code>this</code>
      */
-    public final ApplicationBuilder relocatorFactory(final RelocatorFactory relocatorFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder relocatorFactory(@NotNull final RelocatorFactory relocatorFactory) {
         this.relocatorFactory = relocatorFactory;
         return this;
     }
@@ -199,7 +204,8 @@ public abstract class ApplicationBuilder {
      * @param moduleDataProviderFactory Factory that produces DataProvider for modules in jar-in-jar
      * @return <code>this</code>
      */
-    public final ApplicationBuilder moduleDataProviderFactory(final DependencyDataProviderFactory moduleDataProviderFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder moduleDataProviderFactory(@NotNull final DependencyDataProviderFactory moduleDataProviderFactory) {
         this.moduleDataProviderFactory = moduleDataProviderFactory;
         return this;
     }
@@ -210,7 +216,8 @@ public abstract class ApplicationBuilder {
      * @param dataProviderFactory Factory that produces DataProvider to handle `dependencyFileUrl`
      * @return <code>this</code>
      */
-    public final ApplicationBuilder dataProviderFactory(final DependencyDataProviderFactory dataProviderFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder dataProviderFactory(@NotNull final DependencyDataProviderFactory dataProviderFactory) {
         this.dataProviderFactory = dataProviderFactory;
         return this;
     }
@@ -221,7 +228,8 @@ public abstract class ApplicationBuilder {
      * @param preResolutionDataProviderFactory Factory that produces DataProvider to handle `preResolutionFileUrl`
      * @return <code>this</code>
      */
-    public final ApplicationBuilder preResolutionDataProviderFactory(final PreResolutionDataProviderFactory preResolutionDataProviderFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder preResolutionDataProviderFactory(@NotNull final PreResolutionDataProviderFactory preResolutionDataProviderFactory) {
         this.preResolutionDataProviderFactory = preResolutionDataProviderFactory;
         return this;
     }
@@ -233,7 +241,8 @@ public abstract class ApplicationBuilder {
      * @param relocationHelperFactory Factory that produces a RelocationHelper
      * @return <code>this</code>
      */
-    public final ApplicationBuilder relocationHelperFactory(final RelocationHelperFactory relocationHelperFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder relocationHelperFactory(@NotNull final RelocationHelperFactory relocationHelperFactory) {
         this.relocationHelperFactory = relocationHelperFactory;
         return this;
     }
@@ -244,7 +253,8 @@ public abstract class ApplicationBuilder {
      * @param injectorFactory Factory that produces a DependencyInjector
      * @return <code>this</code>
      */
-    public final ApplicationBuilder injectorFactory(final DependencyInjectorFactory injectorFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder injectorFactory(@NotNull final DependencyInjectorFactory injectorFactory) {
         this.injectorFactory = injectorFactory;
         return this;
     }
@@ -255,7 +265,8 @@ public abstract class ApplicationBuilder {
      * @param resolverFactory Factory that produces a DependencyResolverFactory
      * @return <code>this</code>
      */
-    public final ApplicationBuilder resolverFactory(final DependencyResolverFactory resolverFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder resolverFactory(@NotNull final DependencyResolverFactory resolverFactory) {
         this.resolverFactory = resolverFactory;
         return this;
     }
@@ -265,7 +276,8 @@ public abstract class ApplicationBuilder {
      * @param enquirerFactory Factory that produces a RepositoryEnquirer
      * @return <code>this</code>
      */
-    public final ApplicationBuilder enquirerFactory(final RepositoryEnquirerFactory enquirerFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder enquirerFactory(@NotNull final RepositoryEnquirerFactory enquirerFactory) {
         this.enquirerFactory = enquirerFactory;
         return this;
     }
@@ -275,177 +287,217 @@ public abstract class ApplicationBuilder {
      * @param downloaderFactory
      * @return
      */
-    public final ApplicationBuilder downloaderFactory(final DependencyDownloaderFactory downloaderFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder downloaderFactory(@NotNull final DependencyDownloaderFactory downloaderFactory) {
         this.downloaderFactory = downloaderFactory;
         return this;
     }
 
-    public final ApplicationBuilder verifierFactory(final DependencyVerifierFactory verifierFactory) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder verifierFactory(@NotNull final DependencyVerifierFactory verifierFactory) {
         this.verifierFactory = verifierFactory;
         return this;
     }
 
-    public final ApplicationBuilder mirrorSelector(final MirrorSelector mirrorSelector) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder mirrorSelector(@NotNull final MirrorSelector mirrorSelector) {
         this.mirrorSelector = mirrorSelector;
         return this;
     }
 
-    public final ApplicationBuilder logger(final ProcessLogger logger) {
+    @Contract(value = "_ -> this", mutates = "this")
+    public final @NotNull ApplicationBuilder logger(@NotNull final ProcessLogger logger) {
         this.logger = logger;
         return this;
     }
 
-    protected final String getApplicationName() {
+    @Contract(pure = true)
+    protected final @NotNull String getApplicationName() {
         return applicationName;
     }
 
-    protected final URL getDependencyFileUrl() {
+    @Contract(mutates = "this")
+    protected final @Nullable URL getDependencyFileUrl() {
         if (dependencyFileUrl == null) {
             this.dependencyFileUrl = getClass().getClassLoader().getResource("slimjar.json");
         }
+
         return dependencyFileUrl;
     }
 
-    protected final URL getPreResolutionFileUrl() {
+    @Contract(mutates = "this")
+    protected final @Nullable URL getPreResolutionFileUrl() {
         if (preResolutionFileUrl == null) {
             this.preResolutionFileUrl = getClass().getClassLoader().getResource("slimjar-resolutions.json");
         }
+
         return preResolutionFileUrl;
     }
 
-    protected final Path getDownloadDirectoryPath() {
+    @Contract(mutates = "this")
+    protected final @NotNull Path getDownloadDirectoryPath() {
         if (downloadDirectoryPath == null) {
             this.downloadDirectoryPath = DEFAULT_DOWNLOAD_DIRECTORY;
         }
+
         return downloadDirectoryPath;
     }
 
-    protected final RelocatorFactory getRelocatorFactory() throws ReflectiveOperationException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
+    @Contract(mutates = "this")
+    protected final @NotNull RelocatorFactory getRelocatorFactory() {
         if (relocatorFactory == null) {
-            final JarRelocatorFacadeFactory jarRelocatorFacadeFactory = ReflectiveJarRelocatorFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
+            final var jarRelocatorFacadeFactory = ReflectiveJarRelocatorFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
             this.relocatorFactory = new JarFileRelocatorFactory(jarRelocatorFacadeFactory);
         }
+
         return relocatorFactory;
     }
 
-    protected final DependencyDataProviderFactory getModuleDataProviderFactory() throws URISyntaxException, ReflectiveOperationException, NoSuchAlgorithmException, IOException, InterruptedException {
+    @Contract(mutates = "this")
+    protected final @NotNull DependencyDataProviderFactory getModuleDataProviderFactory() {
         if (moduleDataProviderFactory == null) {
-            final GsonFacadeFactory gsonFacadeFactory = ReflectiveGsonFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
+            final var gsonFacadeFactory = ReflectiveGsonFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
             this.moduleDataProviderFactory = new ExternalDependencyDataProviderFactory(gsonFacadeFactory);
         }
+
         return moduleDataProviderFactory;
     }
 
-    protected final DependencyDataProviderFactory getDataProviderFactory() throws URISyntaxException, ReflectiveOperationException, NoSuchAlgorithmException, IOException, InterruptedException {
+    @Contract(mutates = "this")
+    protected final @NotNull DependencyDataProviderFactory getDataProviderFactory() {
         if (dataProviderFactory == null) {
-            final GsonFacadeFactory gsonFacadeFactory = ReflectiveGsonFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
+            final var gsonFacadeFactory = ReflectiveGsonFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
             this.dataProviderFactory = new GsonDependencyDataProviderFactory(gsonFacadeFactory);
         }
+
         return dataProviderFactory;
     }
 
-    protected final PreResolutionDataProviderFactory getPreResolutionDataProviderFactory() throws URISyntaxException, ReflectiveOperationException, NoSuchAlgorithmException, IOException, InterruptedException {
+    @Contract(mutates = "this")
+    protected final @NotNull PreResolutionDataProviderFactory getPreResolutionDataProviderFactory() {
         if (preResolutionDataProviderFactory == null) {
-            final GsonFacadeFactory gsonFacadeFactory = ReflectiveGsonFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
+            final var gsonFacadeFactory = ReflectiveGsonFacadeFactory.create(getDownloadDirectoryPath(), Collections.singleton(Repository.central()));
             this.preResolutionDataProviderFactory = new GsonPreResolutionDataProviderFactory(gsonFacadeFactory);
         }
+
         return preResolutionDataProviderFactory;
     }
 
-    protected final RelocationHelperFactory getRelocationHelperFactory() throws NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
+    @Contract(mutates = "this")
+    protected final @NotNull RelocationHelperFactory getRelocationHelperFactory() {
         if (relocationHelperFactory == null) {
-            final FileChecksumCalculator checksumCalculator = new FileChecksumCalculator("SHA-256");
-            final FilePathStrategy pathStrategy = FilePathStrategy.createRelocationStrategy(getDownloadDirectoryPath().toFile(), getApplicationName());
-            final MetaMediatorFactory mediatorFactory = new FlatFileMetaMediatorFactory();
+            final var checksumCalculator = new FileChecksumCalculator("SHA-256");
+            final var pathStrategy = FilePathStrategy.createRelocationStrategy(getDownloadDirectoryPath().toFile(), getApplicationName());
+            final var mediatorFactory = new FlatFileMetaMediatorFactory();
             this.relocationHelperFactory = new VerifyingRelocationHelperFactory(checksumCalculator, pathStrategy, mediatorFactory);
         }
+
         return relocationHelperFactory;
     }
 
-    protected final DependencyInjectorFactory getInjectorFactory() {
+    @Contract(mutates = "this")
+    protected final @NotNull DependencyInjectorFactory getInjectorFactory() {
         if (injectorFactory == null) {
             this.injectorFactory = new SimpleDependencyInjectorFactory();
         }
+
         return injectorFactory;
     }
 
-    protected final DependencyResolverFactory getResolverFactory() {
+    @Contract(mutates = "this")
+    protected final @NotNull DependencyResolverFactory getResolverFactory() {
         if (resolverFactory == null) {
-            final URLPinger pinger = new HttpURLPinger();
+            final var pinger = new HttpURLPinger();
             this.resolverFactory = new CachingDependencyResolverFactory(pinger);
         }
+
         return resolverFactory;
     }
 
-    protected final RepositoryEnquirerFactory getEnquirerFactory() {
+    @Contract(mutates = "this")
+    protected final @NotNull RepositoryEnquirerFactory getEnquirerFactory() {
         if (enquirerFactory == null) {
-            final PathResolutionStrategy releaseStrategy = new MavenPathResolutionStrategy();
-            final PathResolutionStrategy snapshotStrategy = new MavenSnapshotPathResolutionStrategy();
-            final PathResolutionStrategy resolutionStrategy = new MediatingPathResolutionStrategy(releaseStrategy, snapshotStrategy);
-            final PathResolutionStrategy pomURLCreationStrategy = new MavenPomPathResolutionStrategy();
-            final PathResolutionStrategy checksumResolutionStrategy = new MavenChecksumPathResolutionStrategy("SHA-1", resolutionStrategy);
-            final URLPinger urlPinger = new HttpURLPinger();
+            final var releaseStrategy = new MavenPathResolutionStrategy();
+            final var snapshotStrategy = new MavenSnapshotPathResolutionStrategy();
+            final var resolutionStrategy = new MediatingPathResolutionStrategy(releaseStrategy, snapshotStrategy);
+            final var pomURLCreationStrategy = new MavenPomPathResolutionStrategy();
+            final var checksumResolutionStrategy = new MavenChecksumPathResolutionStrategy("SHA-1", resolutionStrategy);
+            final var urlPinger = new HttpURLPinger();
             this.enquirerFactory = new PingingRepositoryEnquirerFactory(resolutionStrategy, checksumResolutionStrategy, pomURLCreationStrategy, urlPinger);
         }
+
         return enquirerFactory;
     }
 
-    protected final DependencyDownloaderFactory getDownloaderFactory() {
+    @Contract(mutates = "this")
+    protected final @NotNull DependencyDownloaderFactory getDownloaderFactory() {
         if (downloaderFactory == null) {
             this.downloaderFactory = new URLDependencyDownloaderFactory();
         }
+
         return downloaderFactory;
     }
 
-    protected final DependencyVerifierFactory getVerifierFactory() throws NoSuchAlgorithmException {
+    @Contract(mutates = "this")
+    protected final @NotNull DependencyVerifierFactory getVerifierFactory() {
         if (verifierFactory == null) {
-            final FilePathStrategy filePathStrategy = ChecksumFilePathStrategy.createStrategy(getDownloadDirectoryPath().toFile(), "SHA-1");
-            final OutputWriterFactory checksumOutputFactory = new DependencyOutputWriterFactory(filePathStrategy);
-            final DependencyVerifierFactory fallback = new PassthroughDependencyVerifierFactory();
-            final ChecksumCalculator checksumCalculator = new FileChecksumCalculator("SHA-1");
+            final var filePathStrategy = ChecksumFilePathStrategy.createStrategy(getDownloadDirectoryPath().toFile(), "SHA-1");
+            final var checksumOutputFactory = new DependencyOutputWriterFactory(filePathStrategy);
+            final var fallback = new PassthroughDependencyVerifierFactory();
+            final var checksumCalculator = new FileChecksumCalculator("SHA-1");
             this.verifierFactory = new ChecksumDependencyVerifierFactory(checksumOutputFactory, fallback, checksumCalculator);
         }
+
         return verifierFactory;
     }
 
-    protected final MirrorSelector getMirrorSelector() throws MalformedURLException {
+    @Contract(mutates = "this")
+    protected final @NotNull MirrorSelector getMirrorSelector() {
         if (mirrorSelector == null) {
             mirrorSelector = new SimpleMirrorSelector();
         }
+
         return mirrorSelector;
     }
-    protected final ProcessLogger getLogger() {
+
+    @Contract(mutates = "this")
+    protected final @NotNull ProcessLogger getLogger() {
         if (logger == null) {
             logger = (msg, args) -> {};
         }
+
         return logger;
     }
 
-    protected final DependencyInjector createInjector() throws IOException, URISyntaxException, NoSuchAlgorithmException, ReflectiveOperationException, InterruptedException {
-        final InjectionHelperFactory injectionHelperFactory = new InjectionHelperFactory(
-                getDownloadDirectoryPath(),
-                getRelocatorFactory(),
-                getDataProviderFactory(),
-                getRelocationHelperFactory(),
-                getInjectorFactory(),
-                getResolverFactory(),
-                getEnquirerFactory(),
-                getDownloaderFactory(),
-                getVerifierFactory(),
-                getMirrorSelector()
+    @Contract(value = "-> new", mutates = "this")
+    protected final @NotNull DependencyInjector createInjector() {
+        final var injectionHelperFactory = new InjectionHelperFactory(
+            getDownloadDirectoryPath(),
+            getRelocatorFactory(),
+            getDataProviderFactory(),
+            getRelocationHelperFactory(),
+            getInjectorFactory(),
+            getResolverFactory(),
+            getEnquirerFactory(),
+            getDownloaderFactory(),
+            getVerifierFactory(),
+            getMirrorSelector()
         );
+
         return getInjectorFactory().create(injectionHelperFactory);
     }
 
-    public final Application build() throws IOException, ReflectiveOperationException, URISyntaxException, NoSuchAlgorithmException, InterruptedException {
-        final MediatingProcessLogger mediatingLogger = LogDispatcher.getMediatingLogger();
-        final ProcessLogger logger = getLogger();
+    @Contract(value = "-> new", mutates = "this")
+    public final @NotNull Application build() {
+        final var mediatingLogger = LogDispatcher.getMediatingLogger();
+        final var logger = getLogger();
         mediatingLogger.addLogger(logger);
-        final Application result = buildApplication();
+        final var result = buildApplication();
         mediatingLogger.removeLogger(logger);
+
         return result;
     }
 
-    protected abstract Application buildApplication() throws IOException, ReflectiveOperationException, URISyntaxException, NoSuchAlgorithmException, InterruptedException;
-
+    @Contract(value = "-> new", mutates = "this")
+    protected abstract @NotNull Application buildApplication();
 }

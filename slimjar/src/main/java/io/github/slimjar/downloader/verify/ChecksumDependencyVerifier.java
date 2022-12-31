@@ -24,87 +24,120 @@
 
 package io.github.slimjar.downloader.verify;
 
-import io.github.slimjar.downloader.output.OutputWriter;
 import io.github.slimjar.downloader.output.OutputWriterFactory;
-import io.github.slimjar.logging.LogDispatcher;
+import io.github.slimjar.exceptions.VerificationException;
+import io.github.slimjar.logging.LocationAwareProcessLogger;
 import io.github.slimjar.logging.ProcessLogger;
 import io.github.slimjar.resolver.DependencyResolver;
-import io.github.slimjar.resolver.ResolutionResult;
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.util.Connections;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.net.URLConnection;
 import java.nio.file.Files;
-import java.util.Objects;
 import java.util.Optional;
 
 public final class ChecksumDependencyVerifier implements DependencyVerifier {
-    private static final ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
-    private final DependencyResolver resolver;
-    private final OutputWriterFactory outputWriterFactory;
-    private final DependencyVerifier fallbackVerifier;
-    private final ChecksumCalculator checksumCalculator;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private final DependencyResolver resolver;
+    @NotNull private final OutputWriterFactory outputWriterFactory;
+    @NotNull private final DependencyVerifier fallbackVerifier;
+    @NotNull private final ChecksumCalculator checksumCalculator;
 
-    public ChecksumDependencyVerifier(final DependencyResolver resolver, final OutputWriterFactory outputWriterFactory, final DependencyVerifier fallbackVerifier, final ChecksumCalculator checksumCalculator) {
+    @Contract(pure = true)
+    public ChecksumDependencyVerifier(
+        @NotNull final DependencyResolver resolver,
+        @NotNull final OutputWriterFactory outputWriterFactory,
+        @NotNull final DependencyVerifier fallbackVerifier,
+        @NotNull final ChecksumCalculator checksumCalculator
+    ) {
         this.resolver = resolver;
         this.outputWriterFactory = outputWriterFactory;
         this.fallbackVerifier = fallbackVerifier;
         this.checksumCalculator = checksumCalculator;
     }
 
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
-    public boolean verify(final File file, final Dependency dependency) throws IOException, InterruptedException {
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public boolean verify(
+        @NotNull final File file,
+        @NotNull final Dependency dependency
+    ) throws VerificationException {
         if (!file.exists()) return false;
+
         LOGGER.info("Verifying checksum for %s", dependency.artifactId());
-        final File checksumFile = outputWriterFactory.getStrategy().selectFileFor(dependency);
+
+        final var checksumFile = outputWriterFactory.getStrategy().selectFileFor(dependency);
         checksumFile.getParentFile().mkdirs();
+
         if (!checksumFile.exists() && !prepareChecksumFile(checksumFile, dependency)) {
-            LOGGER.info("Unable to resolve checksum for %s, falling back to fallbackVerifier!", dependency.artifactId());
+            LOGGER.debug("Unable to resolve checksum for %s, falling back to fallbackVerifier!", dependency.artifactId());
             return fallbackVerifier.verify(file, dependency);
         }
+
         if (checksumFile.length() == 0L) {
-            LOGGER.info("Required checksum not found for %s, using fallbackVerifier!", dependency.artifactId());
+            LOGGER.debug("Required checksum not found for %s, using fallbackVerifier!", dependency.artifactId());
             return fallbackVerifier.verify(file, dependency);
         }
-        final String actualChecksum = checksumCalculator.calculate(file);
-        final String expectedChecksum = new String(Files.readAllBytes(checksumFile.toPath())).trim();
+
+        final var actualChecksum = checksumCalculator.calculate(file);
+        final String expectedChecksum;
+        try {
+            expectedChecksum = new String(Files.readAllBytes(checksumFile.toPath())).trim();
+        } catch (IOException e) {
+            throw new VerificationException("Unable to read bytes from checksum file (%s)".formatted(checksumFile), e);
+        }
+
         LOGGER.debug("%s -> Actual checksum: %s;", dependency.artifactId(), actualChecksum);
         LOGGER.debug("%s -> Expected checksum: %s;", dependency.artifactId(), expectedChecksum);
-        final boolean match = Objects.equals(actualChecksum, expectedChecksum);
-        LOGGER.info("Checksum %s for %s", match ? "matched" : "match failed", dependency.artifactId());
-        return Objects.equals(actualChecksum, expectedChecksum);
+
+        if (!actualChecksum.equals(expectedChecksum)) {
+            LOGGER.error("Checksum mismatch for %s, expected %s, got %s", dependency.artifactId(), expectedChecksum, actualChecksum);
+            return false;
+        }
+
+        LOGGER.debug("Checksum matched for %s.", dependency.artifactId());
+        return true;
     }
 
     @Override
-    public File getChecksumFile(final Dependency dependency) {
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "java:S899"})
+    public @NotNull Optional<File> getChecksumFile(@NotNull final Dependency dependency) {
         final File checksumFile = outputWriterFactory.getStrategy().selectFileFor(dependency);
         checksumFile.getParentFile().mkdirs();
-        return checksumFile;
+        return Optional.of(checksumFile);
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private boolean prepareChecksumFile(final File checksumFile, final Dependency dependency) throws IOException {
-        final Optional<ResolutionResult> result = resolver.resolve(dependency);
-
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "java:S899"})
+    private boolean prepareChecksumFile(
+        @NotNull final File checksumFile,
+        @NotNull final Dependency dependency
+    ) throws VerificationException {
+        final var result = resolver.resolve(dependency);
         if (result.isEmpty()) return false;
 
-        final URL checkSumUrl = result.get().checksumURL();
+        final var checkSumUrl = result.get().checksumURL();
+
         LOGGER.info("Resolved checksum URL for %s as %s", dependency.artifactId(), checkSumUrl);
-        if (checkSumUrl == null) {
-            checksumFile.createNewFile();
-            return true;
+
+        try {
+            if (checkSumUrl == null) {
+                checksumFile.createNewFile();
+                return false; // TODO: Was true before, i think this should be false?
+            }
+
+            final var connection = Connections.createDownloadConnection(checkSumUrl);
+            final var inputStream = connection.getInputStream();
+            final var outputWriter = outputWriterFactory.create(dependency);
+
+            outputWriter.writeFrom(inputStream, connection.getContentLength());
+            Connections.tryDisconnect(connection);
+        } catch (final IOException err) {
+            throw new VerificationException("Unable to get checksum for %s".formatted(dependency.toString()), err);
         }
-        final URLConnection connection = Connections.createDownloadConnection(checkSumUrl);
-        final InputStream inputStream = connection.getInputStream();
-        final OutputWriter outputWriter = outputWriterFactory.create(dependency);
-        outputWriter.writeFrom(inputStream, connection.getContentLength());
-        Connections.tryDisconnect(connection);
+
         LOGGER.info("Downloaded checksum for %s", dependency.artifactId());
 
         return true;

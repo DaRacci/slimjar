@@ -24,10 +24,16 @@
 
 package io.github.slimjar.downloader.output;
 
+import io.github.slimjar.exceptions.OutputWriterException;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 
+@FunctionalInterface
 public interface OutputWriter {
-    File writeFrom(final InputStream inputStream, final long length) throws IOException;
+    @NotNull File writeFrom(
+        @NotNull final InputStream inputStream,
+        final long length
+    ) throws OutputWriterException;
 }

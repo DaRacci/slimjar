@@ -26,34 +26,52 @@ package io.github.slimjar.relocation.helper;
 
 import io.github.slimjar.downloader.strategy.FilePathStrategy;
 import io.github.slimjar.downloader.verify.FileChecksumCalculator;
+import io.github.slimjar.exceptions.RelocatorException;
 import io.github.slimjar.relocation.Relocator;
 import io.github.slimjar.relocation.meta.MetaMediatorFactory;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.security.NoSuchAlgorithmException;
 
-public class VerifyingRelocationHelperFactory implements RelocationHelperFactory {
-    private static final URL JAR_URL = VerifyingRelocationHelperFactory.class.getProtectionDomain().getCodeSource().getLocation();
+public final class VerifyingRelocationHelperFactory implements RelocationHelperFactory {
+    @NotNull private static final URI JAR_URL;
 
-    private final FilePathStrategy relocationFilePathStrategy;
-    private final MetaMediatorFactory mediatorFactory;
-    private final String selfHash;
+    static {
+        try {
+            JAR_URL = VerifyingRelocationHelperFactory.class.getProtectionDomain().getCodeSource().getLocation().toURI();
+        } catch (final URISyntaxException err) {
+            throw new RelocatorException("Failed to convert URL to URI.", err);
+        }
+    }
 
-    public VerifyingRelocationHelperFactory(final String selfHash, final FilePathStrategy relocationFilePathStrategy, final MetaMediatorFactory mediatorFactory) {
+    @NotNull private final FilePathStrategy relocationFilePathStrategy;
+    @NotNull private final MetaMediatorFactory mediatorFactory;
+    @NotNull private final String selfHash;
+
+    public VerifyingRelocationHelperFactory(
+        @NotNull final String selfHash,
+        @NotNull final FilePathStrategy relocationFilePathStrategy,
+        @NotNull final MetaMediatorFactory mediatorFactory
+    ) {
         this.relocationFilePathStrategy = relocationFilePathStrategy;
         this.mediatorFactory = mediatorFactory;
         this.selfHash = selfHash;
     }
 
-    public VerifyingRelocationHelperFactory(final FileChecksumCalculator calculator, final FilePathStrategy relocationFilePathStrategy, final MetaMediatorFactory mediatorFactory) throws URISyntaxException, IOException, InterruptedException {
-        this(calculator.calculate(new File(JAR_URL.toURI())), relocationFilePathStrategy, mediatorFactory);
+    public VerifyingRelocationHelperFactory(
+        @NotNull final FileChecksumCalculator calculator,
+        @NotNull final FilePathStrategy relocationFilePathStrategy,
+        @NotNull final MetaMediatorFactory mediatorFactory
+    ) {
+        this(calculator.calculate(new File(JAR_URL)), relocationFilePathStrategy, mediatorFactory);
     }
 
     @Override
-    public RelocationHelper create(final Relocator relocator) throws URISyntaxException, IOException, NoSuchAlgorithmException {
+    @Contract("_ -> new")
+    public @NotNull RelocationHelper create(@NotNull final Relocator relocator) {
         return new VerifyingRelocationHelper(selfHash, relocationFilePathStrategy, relocator, mediatorFactory);
     }
 }

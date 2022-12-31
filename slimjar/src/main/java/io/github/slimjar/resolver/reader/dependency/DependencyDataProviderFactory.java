@@ -24,6 +24,9 @@
 
 package io.github.slimjar.resolver.reader.dependency;
 
+import io.github.slimjar.exceptions.ResolutionException;
+import io.github.slimjar.resolver.reader.facade.GsonFacade;
+import io.github.slimjar.resolver.reader.facade.GsonFacadeFactory;
 import org.jetbrains.annotations.NotNull;
 
 import java.net.URL;
@@ -31,4 +34,12 @@ import java.net.URL;
 @FunctionalInterface
 public interface DependencyDataProviderFactory {
     @NotNull DependencyDataProvider create(@NotNull final URL dependencyFileURL);
+
+    static GsonFacade fromFactory(@NotNull final GsonFacadeFactory gsonFacadeFactory) throws ResolutionException {
+        try {
+            return gsonFacadeFactory.createFacade();
+        } catch (final ReflectiveOperationException err) {
+            throw new ResolutionException("Failed to create GsonFacade", err);
+        }
+    }
 }

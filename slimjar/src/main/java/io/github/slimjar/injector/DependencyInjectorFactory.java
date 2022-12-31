@@ -25,8 +25,11 @@
 package io.github.slimjar.injector;
 
 import io.github.slimjar.injector.helper.InjectionHelperFactory;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 @FunctionalInterface
 public interface DependencyInjectorFactory {
-    DependencyInjector create(final InjectionHelperFactory injectionHelperFactory);
+    @Contract("_ -> new")
+    @NotNull DependencyInjector create(@NotNull final InjectionHelperFactory injectionHelperFactory);
 }

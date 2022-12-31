@@ -24,8 +24,10 @@
 
 package io.github.slimjar.relocation;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.Collection;
 
 public interface RelocatorFactory {
-    Relocator create(final Collection<RelocationRule> rules);
+    @NotNull Relocator create(@NotNull final Collection<RelocationRule> rules);
 }

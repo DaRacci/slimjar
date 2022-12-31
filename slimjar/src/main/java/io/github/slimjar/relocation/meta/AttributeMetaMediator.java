@@ -24,6 +24,10 @@
 
 package io.github.slimjar.relocation.meta;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -31,16 +35,16 @@ import java.nio.file.Path;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 
 public final class AttributeMetaMediator implements MetaMediator {
-    private final UserDefinedFileAttributeView view;
+    @NotNull private final UserDefinedFileAttributeView view;
 
-    public AttributeMetaMediator(final Path path) {
+    public AttributeMetaMediator(@NotNull final Path path) {
         this.view = Files.getFileAttributeView(path, UserDefinedFileAttributeView.class);
     }
 
     @Override
-    public String readAttribute(final String name) {
+    public @NotNull String readAttribute(@NotNull final String name) {
         try {
-            final ByteBuffer buf = ByteBuffer.allocate(view.size(name));
+            final var buf = ByteBuffer.allocate(view.size(name));
             view.read(name, buf);
             buf.flip();
             return Charset.defaultCharset().decode(buf).toString();
@@ -50,10 +54,12 @@ public final class AttributeMetaMediator implements MetaMediator {
     }
 
     @Override
-    public void writeAttribute(final String name, final String value) {
+    public void writeAttribute(
+        @NotNull final String name,
+        @NotNull final String value
+    ) {
         try {
             view.write(name, Charset.defaultCharset().encode(value));
-        } catch (final Exception ignored) {
-        }
+        } catch (final IOException ignored) { /* Ignored */ }
     }
 }

@@ -36,5 +36,5 @@ public interface MirrorSelector {
     @NotNull Collection<@NotNull Repository> select(
         @NotNull final Collection<@NotNull Repository> mainRepositories,
         @NotNull final Collection<@NotNull Mirror> mirrors
-    ) throws MalformedURLException;
+    );
 }

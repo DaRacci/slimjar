@@ -34,7 +34,7 @@ import java.util.Objects;
 
 public final class ResolutionResult {
     @NotNull private final Repository repository;
-    @Nullable private final URL dependencyURL;
+    @NotNull private final URL dependencyURL;
     @Nullable private final URL checksumURL;
     private final boolean aggregator;
     private transient boolean checked;
@@ -42,7 +42,7 @@ public final class ResolutionResult {
     @Contract(pure = true)
     public ResolutionResult(
         @NotNull final Repository repository,
-        @Nullable final URL dependencyURL,
+        @NotNull final URL dependencyURL,
         @Nullable final URL checksumURL,
         final boolean aggregator,
         final boolean checked
@@ -62,7 +62,7 @@ public final class ResolutionResult {
         return repository;
     }
 
-    public @Nullable URL dependencyURL() {
+    public @NotNull URL dependencyURL() {
         return dependencyURL;
     }
 

@@ -32,6 +32,7 @@ import io.github.slimjar.resolver.reader.dependency.DependencyReader;
 import io.github.slimjar.resolver.reader.dependency.GsonDependencyReader;
 import io.github.slimjar.resolver.reader.dependency.URLDependencyDataProvider;
 import io.github.slimjar.resolver.reader.facade.ReflectiveGsonFacadeFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -40,6 +41,7 @@ import java.net.URLConnection;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Assertions;
 import org.mockito.Mockito;
@@ -49,11 +51,7 @@ public class URLDependencyDataProviderTest {
     private static final Collection<Repository> CENTRAL_MIRRORS;
 
     static {
-        try {
-            CENTRAL_MIRRORS = Collections.singleton(new Repository(new URL(Repository.CENTRAL_URL)));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        CENTRAL_MIRRORS = Collections.singleton(Repository.central());
         final String userHome = System.getProperty("user.home");
         final String defaultPath = String.format("%s/.slimjar", userHome);
         final File file = new File(defaultPath);

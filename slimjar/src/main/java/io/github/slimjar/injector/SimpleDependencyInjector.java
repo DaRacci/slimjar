@@ -24,15 +24,18 @@
 
 package io.github.slimjar.injector;
 
+import io.github.slimjar.exceptions.InjectorException;
 import io.github.slimjar.injector.helper.InjectionHelper;
 import io.github.slimjar.injector.helper.InjectionHelperFactory;
 import io.github.slimjar.injector.loader.Injectable;
 import io.github.slimjar.resolver.ResolutionResult;
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.DependencyData;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -50,38 +53,36 @@ public final class SimpleDependencyInjector implements DependencyInjector {
     }
 
     @Override
-    public void inject(final Injectable injectable, final DependencyData data, final Map<String, ResolutionResult> preResolvedResults) throws ReflectiveOperationException, NoSuchAlgorithmException, IOException, URISyntaxException {
-        final InjectionHelper helper = injectionHelperFactory.create(data, preResolvedResults);
+    public void inject(
+        @NotNull final Injectable injectable,
+        @NotNull final DependencyData data,
+        @NotNull final Map<String, ResolutionResult> preResolvedResults
+    ) {
+        final var helper = injectionHelperFactory.create(data, preResolvedResults);
         injectDependencies(injectable, helper, data.dependencies());
     }
 
     // TODO -> Download dependencies in parallel then check the checksums after instead of during the download
-    private void injectDependencies(final Injectable injectable, final InjectionHelper injectionHelper, final Collection<Dependency> dependencies) throws RuntimeException {
-        dependencies.stream()
+    private void injectDependencies(
+        @NotNull final Injectable injectable,
+        @NotNull final InjectionHelper injectionHelper,
+        @NotNull final Collection<Dependency> dependencies
+    ) throws InjectorException {
+        dependencies.parallelStream()
             .filter(dependency -> !injectionHelper.isInjected(dependency))
             .forEach(dependency -> {
                 if (processingDependencies.contains(dependency)) return;
                 processingDependencies.add(dependency);
 
-                try {
-                    final var depJar = injectionHelper.fetch(dependency);
-
-                    if (depJar == null) return;
-
-                    injectable.inject(depJar.toURI().toURL());
+                injectionHelper.fetch(dependency).ifPresent(jarFile -> {
+                    try {
+                        injectable.inject(jarFile.toURI().toURL());
+                    } catch (final MalformedURLException err) { /* Should never happen */ }
                     injectDependencies(injectable, injectionHelper, dependency.transitive());
-                } catch (final IOException e) {
-                    throw new InjectionFailedException(dependency, e);
-                } catch (IllegalAccessException | InvocationTargetException | URISyntaxException e) {
-                    e.printStackTrace();
-                } catch (ReflectiveOperationException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
+                });
 
                 processingDependencies.remove(dependency);
-            }
-        );
+            });
     }
-
 
 }

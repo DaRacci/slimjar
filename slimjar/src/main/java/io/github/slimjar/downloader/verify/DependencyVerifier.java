@@ -24,12 +24,20 @@
 
 package io.github.slimjar.downloader.verify;
 
+import io.github.slimjar.exceptions.VerificationException;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Optional;
 
 public interface DependencyVerifier {
-    boolean verify(final File file, final Dependency dependency) throws IOException, InterruptedException;
-    File getChecksumFile(final  Dependency dependency);
+    boolean verify(
+        @NotNull final File file,
+        @NotNull final Dependency dependency
+    ) throws VerificationException;
+
+    @NotNull Optional<File> getChecksumFile(@NotNull final Dependency dependency);
 }

@@ -39,7 +39,7 @@ public record PingingRepositoryEnquirerFactory(
 
     @Override
     @Contract(pure = true)
-    public @NotNull RepositoryEnquirer create(final @NotNull Repository repository) {
+    public @NotNull RepositoryEnquirer create(@NotNull final Repository repository) {
         return new PingingRepositoryEnquirer(
             repository,
             pathResolutionStrategy,

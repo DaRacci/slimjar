@@ -24,50 +24,33 @@
 
 package io.github.slimjar.relocation;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 
-public final class RelocationRule {
-    private final String originalPackagePattern;
-    private final String relocatedPackagePattern;
-    private final Collection<String> exclusions;
-    private final Collection<String> inclusions;
+public record RelocationRule(
+    @NotNull String originalPackagePattern,
+    @NotNull String relocatedPackagePattern,
+    @NotNull Collection<String> exclusions,
+    @NotNull Collection<String> inclusions
+) {
 
-    public RelocationRule(String original, String relocated, Collection<String> exclusions, Collection<String> inclusions) {
-        this.originalPackagePattern = original;
-        this.relocatedPackagePattern = relocated;
-        this.exclusions = exclusions;
-        this.inclusions = inclusions;
-    }
-
-    public RelocationRule(String original, String relocated) {
+    public RelocationRule(
+        @NotNull final String original,
+        @NotNull final String relocated
+    ) {
         this(original, relocated, Collections.emptyList(), Collections.emptyList());
     }
 
-    public String getOriginalPackagePattern() {
-        return originalPackagePattern;
-    }
-
-    public String getRelocatedPackagePattern() {
-        return relocatedPackagePattern;
-    }
-
-    public Collection<String> getExclusions() {
-        return exclusions;
-    }
-
-    public Collection<String> getInclusions() {
-        return inclusions;
-    }
-
     @Override
-    public boolean equals(final Object o) {
+    public boolean equals(@Nullable final Object o) {
         if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final RelocationRule that = (RelocationRule) o;
+        if (!(o instanceof RelocationRule that)) return false;
         return originalPackagePattern.equals(that.originalPackagePattern) &&
-                relocatedPackagePattern.equals(that.relocatedPackagePattern);
+            relocatedPackagePattern.equals(that.relocatedPackagePattern);
     }
 
     @Override
@@ -78,8 +61,8 @@ public final class RelocationRule {
     @Override
     public String toString() {
         return "RelocationRule{" +
-                "originalPackagePattern='" + originalPackagePattern + '\'' +
-                ", relocatedPackagePattern='" + relocatedPackagePattern + '\'' +
-                '}';
+            "originalPackagePattern='" + originalPackagePattern + '\'' +
+            ", relocatedPackagePattern='" + relocatedPackagePattern + '\'' +
+            '}';
     }
 }

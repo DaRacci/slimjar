@@ -27,7 +27,7 @@ package io.github.slimjar.util;
 import org.jetbrains.annotations.NotNull;
 
 public final class Parameters {
-    private Parameters() {}
+    private Parameters() { }
 
     public static @NotNull Class<?>[] typesFrom(@NotNull final Object... args) {
         final var result = new Class[args.length];

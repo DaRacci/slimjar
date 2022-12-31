@@ -24,30 +24,49 @@
 
 package io.github.slimjar.downloader.output;
 
+import io.github.slimjar.exceptions.OutputWriterException;
+import io.github.slimjar.logging.LocationAwareProcessLogger;
+import io.github.slimjar.logging.ProcessLogger;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.*;
-import java.nio.channels.Channels;
-import java.nio.channels.ReadableByteChannel;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public final class ChanneledFileOutputWriter implements OutputWriter {
-    private static final Logger LOGGER = Logger.getLogger(ChanneledFileOutputWriter.class.getName());
-    private final File outputFile;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private final File outputFile;
 
-    public ChanneledFileOutputWriter(final File outputFile) {
+    @Contract(pure = true)
+    public ChanneledFileOutputWriter(@NotNull final File outputFile) {
         this.outputFile = outputFile;
     }
 
     @Override
-    public File writeFrom(final InputStream inputStream, final long length) throws IOException {
-        LOGGER.log(Level.FINE, "Attempting to write from inputStream...");
-        if (!outputFile.exists()) {
-            LOGGER.log(Level.FINE, "Writing {0} bytes...", length == -1 ? "unknown" : length);
+    @Contract(mutates = "param1")
+    public @NotNull File writeFrom(
+        @NotNull final InputStream inputStream,
+        final long length
+    ) throws OutputWriterException {
+        LOGGER.debug("Attempting to write from inputStream...");
+
+        try {
+            if (outputFile.exists()) return outputFile;
+
+            LOGGER.debug("Writing %s bytes...", length == -1 ? "unknown" : length);
             Files.copy(inputStream, outputFile.toPath());
+        } catch (final Exception err) {
+            throw new OutputWriterException("Unable to copy from input stream to %s.".formatted(outputFile), err);
+        } finally {
+            try {
+                inputStream.close();
+            } catch (final IOException err) {
+                LOGGER.error("Unable to close stream.", err);
+            }
         }
-        inputStream.close();
+
         return outputFile;
     }
 }

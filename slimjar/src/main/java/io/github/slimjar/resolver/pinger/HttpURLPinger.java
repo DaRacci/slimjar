@@ -36,27 +36,27 @@ import java.util.Collection;
 import java.util.Locale;
 
 public final class HttpURLPinger implements URLPinger {
-    private static final ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
-    private static final String SLIMJAR_USER_AGENT = "SlimjarApplication/* URL Validation Ping";
-    private static final Collection<String> SUPPORTED_PROTOCOLS = Arrays.asList("HTTP", "HTTPS");
+    @NotNull private static final ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
+    @NotNull private static final String SLIMJAR_USER_AGENT = "SlimjarApplication/* URL Validation Ping";
+    @NotNull private static final Collection<String> SUPPORTED_PROTOCOLS = Arrays.asList("HTTP", "HTTPS");
 
     @Override
-    public boolean ping(final @NotNull URL url) {
+    public boolean ping(@NotNull final URL url) {
         final var urlStr = url.toString();
-        
+
         LOGGER.debug("Pinging %s" + urlStr);
-        
+
         if (!isSupported(url)) {
             LOGGER.error("Unsupported protocol for %s" + urlStr);
             return false;
         }
-        
+
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) url.openConnection();
             connection.addRequestProperty("User-Agent", SLIMJAR_USER_AGENT);
             connection.connect();
-            
+
             final var responseOk = connection.getResponseCode() == HttpURLConnection.HTTP_OK;
             LOGGER.debug("Ping %s for %s", responseOk ? "successful" : "failed", urlStr);
             return responseOk;

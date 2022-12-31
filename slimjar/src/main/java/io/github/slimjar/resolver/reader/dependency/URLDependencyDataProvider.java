@@ -24,18 +24,19 @@
 
 package io.github.slimjar.resolver.reader.dependency;
 
-
+import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.data.DependencyData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URL;
 
 public final class URLDependencyDataProvider implements DependencyDataProvider {
-    private final DependencyReader dependencyReader;
-    private final URL depFileURL;
-    private DependencyData cachedData = null;
+    @NotNull private final DependencyReader dependencyReader;
+    @NotNull private final URL depFileURL;
+    @Nullable private DependencyData cachedData = null;
 
     @Contract(pure = true)
     public URLDependencyDataProvider(
@@ -53,18 +54,22 @@ public final class URLDependencyDataProvider implements DependencyDataProvider {
 
     @Override
     @Contract(pure = true)
-    public @NotNull DependencyData get() throws IOException, ReflectiveOperationException {
+    public @NotNull DependencyData get() {
         if (cachedData != null) {
             return cachedData;
         }
 
-        final var connection = depFileURL.openConnection();
-        // Do not cache so we can re-read (ex during some form of reload) from this jar file if it changes.
-        connection.setUseCaches(false);
+        try {
+            final var connection = depFileURL.openConnection();
+            // Do not cache so we can re-read (ex during some form of reload) from this jar file if it changes.
+            connection.setUseCaches(false);
 
-        try (final var is = connection.getInputStream()) {
-            cachedData = dependencyReader.read(is);
-            return cachedData;
+            try (final var is = connection.getInputStream()) {
+                cachedData = dependencyReader.read(is);
+                return cachedData;
+            }
+        } catch (final IOException err) {
+            throw new ResolutionException("Unable to read dependency data.", err);
         }
     }
 }

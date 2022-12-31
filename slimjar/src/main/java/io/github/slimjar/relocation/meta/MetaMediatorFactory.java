@@ -24,9 +24,13 @@
 
 package io.github.slimjar.relocation.meta;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.file.Path;
 
 @FunctionalInterface
 public interface MetaMediatorFactory {
-    MetaMediator create(final Path path);
+    @Contract("_ -> new")
+    @NotNull MetaMediator create(@NotNull final Path path);
 }

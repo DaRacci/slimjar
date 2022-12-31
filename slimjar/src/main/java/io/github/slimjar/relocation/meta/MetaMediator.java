@@ -24,9 +24,16 @@
 
 package io.github.slimjar.relocation.meta;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 
 public interface MetaMediator {
-    String readAttribute(final String name) throws IOException;
-    void writeAttribute(final String name, final String value) throws IOException;
+    @Nullable String readAttribute(@NotNull final String name) throws IOException;
+
+    void writeAttribute(
+        @NotNull final String name,
+        @NotNull final String value
+    ) throws IOException;
 }
