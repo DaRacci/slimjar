@@ -24,9 +24,15 @@
 
 package io.github.slimjar.app.module;
 
-import java.io.IOException;
+import io.github.slimjar.exceptions.ModuleExtractorException;
+import org.jetbrains.annotations.NotNull;
+
 import java.net.URL;
 
+@FunctionalInterface
 public interface ModuleExtractor {
-    URL extractModule(final URL url, final String name) throws IOException;
+    @NotNull URL extractModule(
+        @NotNull final URL url,
+        @NotNull final String name
+    ) throws ModuleExtractorException;
 }
