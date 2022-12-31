@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 
 public record PingingRepositoryEnquirer(
     @NotNull Repository repository,
@@ -50,28 +51,29 @@ public record PingingRepositoryEnquirer(
 
     @Override
     @Contract(pure = true)
-    public @NotNull ResolutionResult enquire(final @NotNull Dependency dependency) {
+    public @Nullable ResolutionResult enquire(final @NotNull Dependency dependency) {
         LOGGER.debug("Enquiring repositories to find %s", dependency.artifactId());
 
-        return dependencyURLCreationStrategy.pathTo(repository, dependency)
-                .stream()
+        return dependencyURLCreationStrategy.pathTo(repository, dependency).stream()
+            .map(this::createURL)
+            .filter(Objects::nonNull)
+            .filter(urlPinger::ping)
+            .findFirst()
+            .map(url -> {
+                final var resolvedChecksum = checksumURLCreationStrategy.pathTo(repository, dependency).parallelStream()
+                    .map(this::createURL)
+                    .filter(Objects::nonNull)
+                    .filter(urlPinger::ping)
+                    .findFirst()
+                    .orElse(null);
+                return new ResolutionResult(repository, url, resolvedChecksum, false, true);
+            }).orElseGet(() -> pomURLCreationStrategy.pathTo(repository, dependency).parallelStream()
                 .map(this::createURL)
+                .filter(Objects::nonNull)
                 .filter(urlPinger::ping)
                 .findFirst()
-                .map(url -> {
-                    final var resolvedChecksum = checksumURLCreationStrategy.pathTo(repository, dependency)
-                            .parallelStream()
-                            .map(this::createURL)
-                            .filter(urlPinger::ping)
-                            .findFirst()
-                            .orElse(null);
-                    return new ResolutionResult(repository, url, resolvedChecksum, false, true);
-                }).orElseGet(() -> pomURLCreationStrategy.pathTo(repository, dependency).parallelStream()
-                        .map(this::createURL)
-                        .filter(urlPinger::ping)
-                        .findFirst()
-                        .map(url -> new ResolutionResult(repository, null, null, true, false))
-                        .orElse(null)
+                .map(url -> new ResolutionResult(repository, null, null, true, false))
+                .orElse(null)
         );
     }
 
