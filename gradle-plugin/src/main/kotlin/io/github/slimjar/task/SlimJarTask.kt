@@ -158,7 +158,7 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
                 .filter { dep ->
                     // TODO: Ensure existing results match global if present
                     preResolved[dep.toString()]?.let { pre ->
-                        repositories.none { r -> pre.repository.url().toString() == r.url().toString() }
+                        repositories.none { r -> pre.repository().url().toString() == r.url().toString() }
                     } ?: true
                 }.concurrentMap(this, 16) { dep ->
                     dep to if (globalRepositoryEnquirer.isPresent) {
@@ -266,40 +266,40 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
         action: ShadowJar.() -> Unit
     ): ShadowJar? = (project.tasks.findByName(maybePrefix(null, null, "shadowJar")) as? ShadowJar)?.apply(action)
 
-    private object DependencyDataSerializer : KSerializer<DependencyData> {
-        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("DependencyData") {
-            element<List<Mirror>>("mirrors")
-            element<List<Repository>>("repositories")
-            element<List<Dependency>>("dependencies")
-        }
-
-        override fun deserialize(decoder: Decoder): DependencyData {
-            val input = decoder.beginStructure(descriptor)
-            var mirrors: List<Mirror>? = null
-            var repositories: List<Repository>? = null
-            var dependencies: List<Dependency>? = null
-            while (true) {
-                when (val index = input.decodeElementIndex(descriptor)) {
-                    CompositeDecoder.DECODE_DONE -> break
-                    0 -> mirrors = input.decodeSerializableElement(descriptor, index, ListSerializer(MirrorSerializer))
-                    1 -> repositories = input.decodeSerializableElement(descriptor, index, ListSerializer(RepositorySerializer))
-                    2 -> dependencies = input.decodeSerializableElement(descriptor, index, ListSerializer(DependencySerializer))
-                    else -> error("Unexpected index: $index")
-                }
-            }
-            input.endStructure(descriptor)
-            return DependencyData(mirrors!!, repositories!!, dependencies!!, emptyList())
-        }
-
-        override fun serialize(
-            encoder: Encoder,
-            value: DependencyData
-        ) {
-            encoder.encodeStructure(descriptor) {
-                encodeSerializableElement(descriptor, 0, ListSerializer(Mirror.serializer()), value.mirrors())
-                encodeSerializableElement(descriptor, 1, ListSerializer(Repository.serializer()), value.repositories())
-                encodeSerializableElement(descriptor, 2, ListSerializer(Dependency.serializer()), value.dependencies())
-            }
-        }
-    }
+//    private object DependencyDataSerializer : KSerializer<DependencyData> {
+//        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("DependencyData") {
+//            element<List<Mirror>>("mirrors")
+//            element<List<Repository>>("repositories")
+//            element<List<Dependency>>("dependencies")
+//        }
+//
+//        override fun deserialize(decoder: Decoder): DependencyData {
+//            val input = decoder.beginStructure(descriptor)
+//            var mirrors: List<Mirror>? = null
+//            var repositories: List<Repository>? = null
+//            var dependencies: List<Dependency>? = null
+//            while (true) {
+//                when (val index = input.decodeElementIndex(descriptor)) {
+//                    CompositeDecoder.DECODE_DONE -> break
+//                    0 -> mirrors = input.decodeSerializableElement(descriptor, index, ListSerializer(MirrorSerializer))
+//                    1 -> repositories = input.decodeSerializableElement(descriptor, index, ListSerializer(RepositorySerializer))
+//                    2 -> dependencies = input.decodeSerializableElement(descriptor, index, ListSerializer(DependencySerializer))
+//                    else -> error("Unexpected index: $index")
+//                }
+//            }
+//            input.endStructure(descriptor)
+//            return DependencyData(mirrors!!, repositories!!, dependencies!!, emptyList())
+//        }
+//
+//        override fun serialize(
+//            encoder: Encoder,
+//            value: DependencyData
+//        ) {
+//            encoder.encodeStructure(descriptor) {
+//                encodeSerializableElement(descriptor, 0, ListSerializer(Mirror.serializer()), value.mirrors())
+//                encodeSerializableElement(descriptor, 1, ListSerializer(Repository.serializer()), value.repositories())
+//                encodeSerializableElement(descriptor, 2, ListSerializer(Dependency.serializer()), value.dependencies())
+//            }
+//        }
+//    }
 }
