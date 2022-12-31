@@ -57,7 +57,7 @@ public final class TemporaryModuleExtractor implements ModuleExtractor {
 
             return tempFile.toURI().toURL();
         } catch (final IOException e) {
-            throw new ModuleExtractorException(e);
+            throw new ModuleExtractorException("Encountered IOException.", e);
         }
     }
 

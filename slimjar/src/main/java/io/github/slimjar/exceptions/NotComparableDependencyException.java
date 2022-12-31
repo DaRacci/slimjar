@@ -4,7 +4,7 @@ import io.github.slimjar.resolver.data.Dependency;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-public final class NotComparableDependencyException extends RuntimeException {
+public final class NotComparableDependencyException extends SlimJarException {
 
     @Contract(pure = true)
     public NotComparableDependencyException(
