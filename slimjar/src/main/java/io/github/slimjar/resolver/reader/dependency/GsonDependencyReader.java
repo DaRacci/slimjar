@@ -24,11 +24,13 @@
 
 package io.github.slimjar.resolver.reader.dependency;
 
+import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.data.DependencyData;
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
@@ -38,8 +40,11 @@ public record GsonDependencyReader(
 
     @Override
     @Contract(pure = true)
-    public @NotNull DependencyData read(@NotNull final InputStream inputStream) throws ReflectiveOperationException {
-        final var inputStreamReader = new InputStreamReader(inputStream);
-        return gsonFacade.fromJson(inputStreamReader, DependencyData.class);
+    public @NotNull DependencyData read(@NotNull final InputStream inputStream) throws ResolutionException {
+        try (final var inputStreamReader = new InputStreamReader(inputStream)) {
+            return gsonFacade.fromJson(inputStreamReader, DependencyData.class);
+        } catch (final IOException | ReflectiveOperationException err) {
+            throw new ResolutionException("Failed to read dependency data", err);
+        }
     }
 }

@@ -27,109 +27,115 @@ package io.github.slimjar.app.builder;
 import io.github.slimjar.app.module.ModuleExtractor;
 import io.github.slimjar.app.module.TemporaryModuleExtractor;
 import io.github.slimjar.util.Modules;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
-public final class IsolationConfiguration {
-    private final String applicationClass;
-    private final Collection<String> modules;
-    private final ClassLoader parentClassloader;
-    private final ModuleExtractor moduleExtractor;
+public record IsolationConfiguration(
+    @NotNull String applicationClass,
+    @NotNull Collection<String> modules,
+    @NotNull ClassLoader parentClassloader,
+    @NotNull ModuleExtractor moduleExtractor
+) {
 
-    public IsolationConfiguration(String applicationClass, Collection<String> modules, ClassLoader parentClassloader, ModuleExtractor moduleExtractor) {
+    @Contract(pure = true)
+    public IsolationConfiguration(
+        @NotNull String applicationClass,
+        @NotNull Collection<String> modules,
+        @NotNull ClassLoader parentClassloader,
+        @NotNull ModuleExtractor moduleExtractor
+    ) {
         this.applicationClass = applicationClass;
         this.modules = Collections.unmodifiableCollection(modules);
         this.parentClassloader = parentClassloader;
         this.moduleExtractor = moduleExtractor;
     }
 
-    public String getApplicationClass() {
-        return applicationClass;
-    }
-
-    public Collection<String> getModules() {
-        return modules;
-    }
-
-    public ClassLoader getParentClassloader() {
-        return parentClassloader;
-    }
-
-    public ModuleExtractor getModuleExtractor() {
-        return moduleExtractor;
-    }
-
-    public static Builder builder(final String applicationClass) {
+    @Contract(pure = true)
+    public static @NotNull Builder builder(@NotNull final String applicationClass) {
         return new Builder().applicationClass(applicationClass);
     }
 
     public static final class Builder {
         private String applicationClass;
-        private Collection<String> modules = new HashSet<>();
+        @NotNull private Set<String> modules = Collections.emptySet();
         private ClassLoader parentClassloader;
         private ModuleExtractor moduleExtractor;
 
-        public Builder applicationClass(final String applicationClass) {
+        @Contract(value = "_ -> this", mutates = "this")
+        public @NotNull Builder applicationClass(final String applicationClass) {
             this.applicationClass = applicationClass;
             return this;
         }
 
-        public Builder modules(final Collection<String> modules) {
-            final Collection<String> mod = new HashSet<>(modules);
-            mod.addAll(modules);
-            this.modules = mod;
+        @Contract(value = "_ -> this", mutates = "this")
+        public @NotNull Builder modules(@NotNull final String... modules) {
+            this.modules = Stream.concat(this.modules.stream(), Arrays.stream(modules)).collect(Collectors.toUnmodifiableSet());
             return this;
         }
 
-        public Builder module(final String module) {
-            this.modules.add(module);
-            return this;
-        }
-
-        public Builder parentClassLoader(final ClassLoader classLoader) {
+        @Contract(value = "_ -> this", mutates = "this")
+        public @NotNull Builder parentClassLoader(@NotNull final ClassLoader classLoader) {
             this.parentClassloader = classLoader;
             return this;
         }
 
-        public Builder moduleExtractor(final ModuleExtractor moduleExtractor) {
+        @Contract(value = "_ -> this", mutates = "this")
+        public @NotNull Builder moduleExtractor(@NotNull final ModuleExtractor moduleExtractor) {
             this.moduleExtractor = moduleExtractor;
             return this;
         }
 
-        String getApplicationClass() {
+        @Contract(pure = true)
+        @NotNull String getApplicationClass() {
             if (applicationClass == null) {
                 throw new AssertionError("Application Class not Provided!");
             }
+
             return applicationClass;
         }
 
-        Collection<String> getModules() throws IOException, URISyntaxException {
-            if (modules == null || modules.isEmpty()) {
-                this.modules = Modules.findLocalModules();
+        @Contract(mutates = "this")
+        @NotNull Collection<String> getModules() {
+            if (modules.isEmpty()) {
+                this.modules = Collections.unmodifiableSet(Modules.findLocalModules());
             }
+
             return modules;
         }
 
-        ClassLoader getParentClassloader() {
+        @Contract(mutates = "this")
+        @NotNull ClassLoader getParentClassloader() {
             if (parentClassloader == null) {
                 this.parentClassloader = ClassLoader.getSystemClassLoader().getParent();
             }
+
             return parentClassloader;
         }
 
-        ModuleExtractor getModuleExtractor() {
+        @Contract(mutates = "this")
+        @NotNull ModuleExtractor getModuleExtractor() {
             if (moduleExtractor == null) {
                 this.moduleExtractor = new TemporaryModuleExtractor();
             }
+
             return moduleExtractor;
         }
 
-        public IsolationConfiguration build() throws IOException, URISyntaxException {
-            return new IsolationConfiguration(getApplicationClass(), getModules(), getParentClassloader(), getModuleExtractor());
+        @Contract(value = " -> new", mutates = "this")
+        public @NotNull IsolationConfiguration build() {
+            return new IsolationConfiguration(
+                getApplicationClass(),
+                getModules(),
+                getParentClassloader(),
+                getModuleExtractor()
+            );
         }
     }
 }

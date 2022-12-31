@@ -24,21 +24,28 @@
 
 package io.github.slimjar.relocation.meta;
 
+import io.github.slimjar.exceptions.RelocatorException;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class FlatFileMetaMediatorFactory implements MetaMediatorFactory {
+
     @Override
-    public MetaMediator create(final Path path) {
-        final Path metaPath = path.getParent().resolve(path.getFileName().toString() + ".slimjar_meta");
-        if (!Files.exists(metaPath)) {
-            try {
-                Files.createDirectories(metaPath);
-            } catch (final IOException exception) {
-                exception.printStackTrace();
-            }
+    @Contract("_ -> new")
+    public @NotNull MetaMediator create(@NotNull final Path path) throws RelocatorException {
+        final var metaPath = path.getParent().resolve(path.getFileName().toString() + ".slimjar_meta");
+        if (Files.exists(metaPath)) return new FlatFileMetaMediator(metaPath);
+
+        try {
+            Files.createFile(metaPath);
+        } catch (final IOException err) {
+            throw new RelocatorException("Failed to create new file.", err);
         }
+
         return new FlatFileMetaMediator(metaPath);
     }
 }

@@ -25,6 +25,7 @@
 package io.github.slimjar.resolver.reader.dependency;
 
 
+import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.data.DependencyData;
 import org.jetbrains.annotations.NotNull;
 
@@ -32,5 +33,5 @@ import java.io.IOException;
 
 @FunctionalInterface
 public interface DependencyDataProvider {
-    @NotNull DependencyData get() throws IOException, ReflectiveOperationException;
+    @NotNull DependencyData get() throws ResolutionException;
 }

@@ -44,7 +44,7 @@ public record Dependency(
 
     @Override
     @Contract(pure = true)
-    public String toString() {
+    public @NotNull String toString() {
         final String snapshotId = snapshotId();
         final String suffix = (snapshotId != null && snapshotId.length() > 0) ? (":" + snapshotId) : "";
         return groupId() + ":" + artifactId() + ":" + version() + suffix;
@@ -70,7 +70,7 @@ public record Dependency(
 
     @Override
     @Contract(pure = true) // TODO: Tests
-    public int compareTo(@NotNull Dependency o) throws NotComparableDependencyException {
+    public int compareTo(@NotNull final Dependency o) throws NotComparableDependencyException {
         if (!this.equals(o)) {
             throw new NotComparableDependencyException(this, o);
         }

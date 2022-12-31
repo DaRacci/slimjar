@@ -24,7 +24,11 @@
 
 package io.github.slimjar.downloader.strategy;
 
+import io.github.slimjar.logging.LocationAwareProcessLogger;
+import io.github.slimjar.logging.ProcessLogger;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Optional;
@@ -32,42 +36,43 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class RelocationFilePathStrategy implements FilePathStrategy {
-    private static final Logger LOGGER = Logger.getLogger(FolderedFilePathStrategy.class.getName());
-    private static final String DEPENDENCY_FILE_FORMAT = "%s/%s/%s/%s/relocated/%5$s/%3$s-%4$s.jar";
-    private final File rootDirectory;
-    private final String applicationName;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private static final String DEPENDENCY_FILE_FORMAT = "%s/%s/%s/%s/relocated/%5$s/%3$s-%4$s.jar";
+    @NotNull private final File rootDirectory;
+    @NotNull private final String applicationName;
 
-
-    private RelocationFilePathStrategy(final String applicationName, final File rootDirectory) {
+    @Contract(pure = true)
+    private RelocationFilePathStrategy(
+        @NotNull final File rootDirectory,
+        @NotNull final String applicationName
+    ) {
         this.rootDirectory = rootDirectory;
         this.applicationName = applicationName;
     }
 
     @Override
-    public File selectFileFor(final Dependency dependency) {
-        final String extendedVersion = Optional.ofNullable(dependency.snapshotId()).map(s -> "-" + s).orElse("");
-        final String path = String.format(
-                DEPENDENCY_FILE_FORMAT,
-                rootDirectory.getPath(),
-                dependency.groupId().replace('.','/'),
-                dependency.artifactId(),
-                dependency.version() + extendedVersion,
-                applicationName
+    @Contract(pure = true)
+    public @NotNull File selectFileFor(@NotNull final Dependency dependency) {
+        final var extendedVersion = Optional.ofNullable(dependency.snapshotId()).map(s -> "-" + s).orElse("");
+        final var path = String.format(
+            DEPENDENCY_FILE_FORMAT,
+            rootDirectory.getPath(),
+            dependency.groupId().replace('.','/'),
+            dependency.artifactId(),
+            dependency.version() + extendedVersion,
+            applicationName
         );
-        LOGGER.log(Level.FINEST, "Selected file for relocated " + dependency.artifactId() + " at " + path);
+
+        LOGGER.debug("Selected file for relocated %s at %s. ", dependency.artifactId(), path);
         return new File(path);
     }
 
-    public static FilePathStrategy createStrategy(final File rootDirectory, final String applicationName) throws IllegalArgumentException {
-        if (!rootDirectory.exists()) {
-            boolean created = rootDirectory.mkdirs();
-            if (!created) {
-                throw new IllegalArgumentException("Could not create specified directory: " + rootDirectory);
-            }
-        }
-        if (!rootDirectory.isDirectory()) {
-            throw new IllegalArgumentException("Expecting a directory for download root! " + rootDirectory);
-        }
-        return new RelocationFilePathStrategy(applicationName, rootDirectory);
+    @Contract(value = "_, _ -> new", pure = true)
+    public static @NotNull FilePathStrategy createStrategy(
+        @NotNull final File rootDirectory,
+        @NotNull final String applicationName
+    ) throws IllegalStateException {
+        FilePathStrategy.validateDirectory(rootDirectory);
+        return new RelocationFilePathStrategy(rootDirectory, applicationName);
     }
 }

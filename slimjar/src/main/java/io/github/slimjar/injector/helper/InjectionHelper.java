@@ -26,12 +26,15 @@ package io.github.slimjar.injector.helper;
 
 
 import io.github.slimjar.downloader.DependencyDownloader;
+import io.github.slimjar.exceptions.InjectorException;
 import io.github.slimjar.relocation.helper.RelocationHelper;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 public final class InjectionHelper {
@@ -53,7 +56,12 @@ public final class InjectionHelper {
         this(dependencyDownloader, relocationHelper, new HashSet<>());
     }
 
-    public File fetch(final Dependency dependency) throws IOException, ReflectiveOperationException, InterruptedException {
+    public @NotNull Optional<File> fetch(final Dependency dependency) throws InjectorException {
+        dependencyDownloader.download(dependency).map(download -> {
+            injectedDependencies.add(dependency);
+            return relocationHelper.relocate(dependency, download);
+        });
+
         final File downloaded = dependencyDownloader.download(dependency);
         if (downloaded == null) {
             return null;

@@ -24,10 +24,15 @@
 
 package io.github.slimjar.injector.loader;
 
+import io.github.slimjar.exceptions.InjectorException;
+import io.github.slimjar.exceptions.RelocatorException;
 import io.github.slimjar.injector.agent.ByteBuddyInstrumentationFactory;
 import io.github.slimjar.injector.agent.InstrumentationFactory;
+import io.github.slimjar.relocation.facade.JarRelocatorFacadeFactory;
 import io.github.slimjar.relocation.facade.ReflectiveJarRelocatorFacadeFactory;
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -35,30 +40,42 @@ import java.lang.instrument.Instrumentation;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.jar.JarFile;
 
 public final class InstrumentationInjectable implements Injectable {
 
+    @NotNull private final Instrumentation instrumentation;
 
-
-    private final Instrumentation instrumentation;
-
-    public InstrumentationInjectable(final Instrumentation instrumentation) {
+    public InstrumentationInjectable(@NotNull final Instrumentation instrumentation) {
         this.instrumentation = instrumentation;
     }
 
     @Override
-    public void inject(final URL url) throws IOException, URISyntaxException {
-        instrumentation.appendToSystemClassLoaderSearch(new JarFile(new File(url.toURI())));
+    public void inject(@NotNull final URL url) throws InjectorException {
+        try {
+            instrumentation.appendToSystemClassLoaderSearch(new JarFile(new File(url.toURI())));
+        } catch (final IOException | URISyntaxException e) {
+            throw new InjectorException("Failed to inject %s into classLoader.".formatted(url), e);
+        }
     }
 
-    public static Injectable create(final Path downloadPath, final Collection<Repository> repositories) throws IOException, NoSuchAlgorithmException, ReflectiveOperationException, URISyntaxException, InterruptedException {
-        return create(new ByteBuddyInstrumentationFactory(ReflectiveJarRelocatorFacadeFactory.create(downloadPath, repositories)));
+    public static @NotNull Injectable create(
+        @NotNull final Path downloadPath,
+        @NotNull final Collection<Repository> repositories
+    ) throws InjectorException {
+        final JarRelocatorFacadeFactory jarRelocatorFacadeFactory;
+        try {
+            jarRelocatorFacadeFactory = ReflectiveJarRelocatorFacadeFactory.create(downloadPath, repositories);
+        } catch (final RelocatorException err) {
+            throw new InjectorException("Failed to create relocator facade factory.", err);
+        }
+
+        return create(new ByteBuddyInstrumentationFactory(jarRelocatorFacadeFactory));
     }
 
-    public static Injectable create(final InstrumentationFactory factory) throws IOException, NoSuchAlgorithmException, ReflectiveOperationException, URISyntaxException, InterruptedException {
+    @Contract("_ -> new")
+    public static @NotNull Injectable create(@NotNull final InstrumentationFactory factory) throws InjectorException {
         return new InstrumentationInjectable(factory.create());
     }
 }

@@ -32,10 +32,12 @@ import io.github.slimjar.resolver.reader.dependency.GsonDependencyReader;
 import io.github.slimjar.resolver.reader.MockDependencyData;
 import io.github.slimjar.resolver.reader.dependency.ModuleDependencyDataProvider;
 import io.github.slimjar.resolver.reader.facade.ReflectiveGsonFacadeFactory;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
+
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -48,20 +50,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
+
 import org.junit.jupiter.api.Assertions;
 import org.mockito.Mockito;
-
 
 public class ModuleDependencyDataProviderTest {
     private static final Path DEFAULT_DOWNLOAD_DIRECTORY;
     private static final Collection<Repository> CENTRAL_MIRRORS;
 
     static {
-        try {
-            CENTRAL_MIRRORS = Collections.singleton(new Repository(new URL(Repository.CENTRAL_URL)));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        CENTRAL_MIRRORS = Collections.singleton(Repository.central());
         final String userHome = System.getProperty("user.home");
         final String defaultPath = String.format("%s/.slimjar", userHome);
         DEFAULT_DOWNLOAD_DIRECTORY = new File(defaultPath).toPath();
@@ -85,10 +83,10 @@ public class ModuleDependencyDataProviderTest {
         final var mockUrl = Mockito.mock(URL.class);
         final var jarURLConnection = createJarConnection(null, null);
         final var emptyDependency = new DependencyData(
-                Collections.emptySet(),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                Collections.emptySet()
+            Collections.emptySet(),
+            Collections.emptySet(),
+            Collections.emptySet(),
+            Collections.emptySet()
         );
 
         final DependencyDataProvider dependencyDataProvider = createProvider(mockUrl, jarURLConnection);

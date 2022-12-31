@@ -27,10 +27,11 @@ package io.github.slimjar.util;
 import org.jetbrains.annotations.NotNull;
 
 public final class Packages {
-    private Packages() {}
+    private Packages() { }
 
     /**
      * This exists to bypass relocation so that original classes can be mapped back
+     *
      * @param input package name separated by #
      * @return proper package name
      */

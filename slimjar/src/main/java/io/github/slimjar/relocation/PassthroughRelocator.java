@@ -24,15 +24,25 @@
 
 package io.github.slimjar.relocation;
 
+import io.github.slimjar.exceptions.RelocatorException;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 
 public final class PassthroughRelocator implements Relocator {
     @Override
-    public void relocate(final File input, final File output) throws IOException {
+    public void relocate(
+        @NotNull final File input,
+        @NotNull final File output
+    ) throws RelocatorException {
         if (input.equals(output)) return;
         if (output.exists()) return;
-        Files.copy(input.toPath(), output.toPath());
+        try {
+            Files.copy(input.toPath(), output.toPath());
+        } catch (final IOException err) {
+            throw new RelocatorException("Failed to copy to %s".formatted(output), err);
+        }
     }
 }

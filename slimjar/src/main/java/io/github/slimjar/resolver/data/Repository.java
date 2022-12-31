@@ -35,10 +35,9 @@ import java.util.Objects;
 
 @Serializable
 public record Repository(@NotNull URL url) {
-    public static final String CENTRAL_URL = "https://repo1.maven.org/maven2/";
+    @NotNull public static final String CENTRAL_URL = "https://repo1.maven.org/maven2/";
     private static Repository centralInstance;
 
-    @Contract(pure = true)
     public static @NotNull Repository central() {
         if (centralInstance == null) {
             try {

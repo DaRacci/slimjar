@@ -25,26 +25,38 @@
 package io.github.slimjar.downloader.verify;
 
 import io.github.slimjar.downloader.output.OutputWriterFactory;
+import io.github.slimjar.logging.LocationAwareProcessLogger;
+import io.github.slimjar.logging.ProcessLogger;
 import io.github.slimjar.resolver.DependencyResolver;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public final class ChecksumDependencyVerifierFactory implements DependencyVerifierFactory {
-    private static final Logger LOGGER = Logger.getLogger(ChecksumDependencyVerifierFactory.class.getName());
-    private final OutputWriterFactory outputWriterFactory;
-    private final DependencyVerifierFactory fallbackVerifierFactory;
-    private final ChecksumCalculator checksumCalculator;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private final OutputWriterFactory outputWriterFactory;
+    @NotNull private final DependencyVerifierFactory fallbackVerifierFactory;
+    @NotNull private final ChecksumCalculator checksumCalculator;
 
-    public ChecksumDependencyVerifierFactory(final OutputWriterFactory outputWriterFactory, final DependencyVerifierFactory fallbackVerifierFactory, final ChecksumCalculator checksumCalculator) {
+    @Contract(pure = true)
+    public ChecksumDependencyVerifierFactory(
+        @NotNull final OutputWriterFactory outputWriterFactory,
+        @NotNull final DependencyVerifierFactory fallbackVerifierFactory,
+        @NotNull final ChecksumCalculator checksumCalculator
+    ) {
         this.outputWriterFactory = outputWriterFactory;
         this.fallbackVerifierFactory = fallbackVerifierFactory;
         this.checksumCalculator = checksumCalculator;
     }
 
     @Override
-    public DependencyVerifier create(final DependencyResolver resolver) {
-        LOGGER.log(Level.FINEST, "Creating verifier...");
-        return new ChecksumDependencyVerifier(resolver, outputWriterFactory, fallbackVerifierFactory.create(resolver), checksumCalculator);
+    @Contract(value = "_ -> new", pure = true)
+    public @NotNull DependencyVerifier create(final @NotNull DependencyResolver resolver) {
+        LOGGER.debug("Creating verifier...");
+        return new ChecksumDependencyVerifier(
+            resolver,
+            outputWriterFactory,
+            fallbackVerifierFactory.create(resolver),
+            checksumCalculator
+        );
     }
 }

@@ -26,24 +26,32 @@ package io.github.slimjar.downloader.verify;
 
 import io.github.slimjar.resolver.DependencyResolver;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Optional;
 
 public final class PassthroughDependencyVerifierFactory implements DependencyVerifierFactory {
     @Override
-    public DependencyVerifier create(DependencyResolver resolver) {
+    @Contract(value = "_ -> new", pure = true)
+    public @NotNull DependencyVerifier create(@NotNull final DependencyResolver resolver) {
         return new PassthroughVerifier();
     }
+
     private static final class PassthroughVerifier implements DependencyVerifier {
         @Override
-        public boolean verify(final File file, final Dependency dependency) throws IOException {
-            return file.exists();
-        }
+        @Contract(pure = true)
+        public boolean verify(
+            @NotNull final File file,
+            @NotNull final Dependency dependency
+        ) { return file.exists(); }
 
         @Override
-        public File getChecksumFile(Dependency dependency) {
-            return null;
+        @Contract(pure = true)
+        public @NotNull Optional<File> getChecksumFile(@NotNull final Dependency dependency) {
+            return Optional.empty();
         }
     }
 }

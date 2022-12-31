@@ -24,51 +24,53 @@
 
 package io.github.slimjar.downloader.strategy;
 
+import io.github.slimjar.logging.LocationAwareProcessLogger;
+import io.github.slimjar.logging.ProcessLogger;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public final class ChecksumFilePathStrategy implements FilePathStrategy {
-    private static final Logger LOGGER = Logger.getLogger(FolderedFilePathStrategy.class.getName());
-    private static final String DEPENDENCY_FILE_FORMAT = "%s/%s/%s/%s/%3$s-%4$s.jar.%5$s";
-    private final File rootDirectory;
-    private final String algorithm;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private static final String DEPENDENCY_FILE_FORMAT = "%s/%s/%s/%s/%3$s-%4$s.jar.%5$s";
+    @NotNull private final File rootDirectory;
+    @NotNull private final String algorithm;
 
-
-    private ChecksumFilePathStrategy(final File rootDirectory, final String algorithm) {
+    @Contract(pure = true)
+    private ChecksumFilePathStrategy(
+        @NotNull final File rootDirectory,
+        @NotNull final String algorithm
+    ) {
         this.rootDirectory = rootDirectory;
         this.algorithm = algorithm.replaceAll("[ -]", "").toLowerCase(Locale.ENGLISH);
     }
 
     @Override
-    public File selectFileFor(Dependency dependency) {
-        final String extendedVersion = Optional.ofNullable(dependency.snapshotId()).map(s -> "-" + s).orElse("");
-        final String path = String.format(
-                DEPENDENCY_FILE_FORMAT,
-                rootDirectory.getPath(),
-                dependency.groupId().replace('.','/'),
-                dependency.artifactId(),
-                dependency.version() + extendedVersion,
-                algorithm
+    @Contract(value = "_ -> new", pure = true)
+    public @NotNull File selectFileFor(final @NotNull Dependency dependency) {
+        final var extendedVersion = Optional.ofNullable(dependency.snapshotId()).map(s -> "-" + s).orElse("");
+        final var path = DEPENDENCY_FILE_FORMAT.formatted(
+            rootDirectory.getPath(),
+            dependency.groupId().replace('.','/'),
+            dependency.artifactId(),
+            dependency.version() + extendedVersion,
+            algorithm
         );
-        LOGGER.log(Level.FINEST, "Selected checksum file for " + dependency.artifactId() + " at " + path);
+
+        LOGGER.debug("Selected checksum file for %s at %s", dependency.artifactId(), path);
         return new File(path);
     }
 
-    public static FilePathStrategy createStrategy(final File rootDirectory, final String algorithm) throws IllegalArgumentException {
-        if (!rootDirectory.exists()) {
-            boolean created = rootDirectory.mkdirs();
-            if (!created) {
-                throw new IllegalArgumentException("Could not create specified directory: " + rootDirectory);
-            }
-        }
-        if (!rootDirectory.isDirectory()) {
-            throw new IllegalArgumentException("Expecting a directory for download root! " + rootDirectory);
-        }
+    @Contract(value = "_, _ -> new", pure = true)
+    public static @NotNull FilePathStrategy createStrategy(
+        @NotNull final File rootDirectory,
+        @NotNull final String algorithm
+    ) throws IllegalStateException {
+        FilePathStrategy.validateDirectory(rootDirectory);
         return new ChecksumFilePathStrategy(rootDirectory, algorithm);
     }
 }

@@ -47,7 +47,7 @@ public record PingingRepositoryEnquirer(
     @NotNull URLPinger urlPinger
 
 ) implements RepositoryEnquirer {
-    private static final @NotNull ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
+    @NotNull private static final ProcessLogger LOGGER = LogDispatcher.getMediatingLogger();
 
     @Override
     @Contract(pure = true)
@@ -72,9 +72,9 @@ public record PingingRepositoryEnquirer(
                 .filter(Objects::nonNull)
                 .filter(urlPinger::ping)
                 .findFirst()
-                .map(url -> new ResolutionResult(repository, null, null, true, false))
+                .map(url -> new ResolutionResult(repository, url, null, true, false))
                 .orElse(null)
-        );
+            );
     }
 
     @Override

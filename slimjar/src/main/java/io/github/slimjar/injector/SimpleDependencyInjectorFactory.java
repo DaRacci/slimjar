@@ -25,10 +25,13 @@
 package io.github.slimjar.injector;
 
 import io.github.slimjar.injector.helper.InjectionHelperFactory;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public final class SimpleDependencyInjectorFactory implements DependencyInjectorFactory {
     @Override
-    public DependencyInjector create(final InjectionHelperFactory injectionHelperFactory) {
+    @Contract("_ -> new")
+    public @NotNull DependencyInjector create(final @NotNull InjectionHelperFactory injectionHelperFactory) {
         return new SimpleDependencyInjector(injectionHelperFactory);
     }
 }

@@ -25,43 +25,54 @@
 package io.github.slimjar.injector.loader;
 
 import io.github.slimjar.app.builder.ApplicationBuilder;
+import io.github.slimjar.exceptions.InjectorException;
 import io.github.slimjar.resolver.data.Repository;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
+import java.util.function.Supplier;
 
 public final class InjectableFactory {
-    private InjectableFactory() {
-    }
+    private InjectableFactory() { }
 
-    public static Injectable create(final Path downloadPath, final Collection<Repository> repositories) throws ReflectiveOperationException, NoSuchAlgorithmException, IOException, URISyntaxException, InterruptedException {
+    @Contract(value = "_, _ -> new")
+    public static @NotNull Injectable create(
+        @NotNull final Path downloadPath,
+        @NotNull final Collection<Repository> repositories
+    ) throws InjectorException {
         return create(downloadPath, repositories, InjectableFactory.class.getClassLoader());
     }
 
-    public static Injectable create(final Path downloadPath, final Collection<Repository> repositories, final ClassLoader classLoader) throws URISyntaxException, ReflectiveOperationException, NoSuchAlgorithmException, IOException, InterruptedException {
-        final boolean isJigsawActive = isJigsawActive();
-        Injectable injectable = null;
+    @Contract(value = "_, _, _ -> new")
+    public static @NotNull Injectable create(
+        @NotNull final Path downloadPath,
+        @NotNull final Collection<Repository> repositories,
+        @NotNull final ClassLoader classLoader
+    ) throws InjectorException {
+        final Supplier<Injectable> injector = () -> InstrumentationInjectable.create(downloadPath, repositories);
+        if (!(classLoader instanceof URLClassLoader urlClassLoader)) {
+            return injector.get();
+        }
 
-        if (isJigsawActive && classLoader instanceof URLClassLoader) {
-            injectable = new WrappedInjectableClassLoader((URLClassLoader) ApplicationBuilder.class.getClassLoader());
-        } else if (isUnsafeAvailable() && classLoader instanceof URLClassLoader urlClassLoader) {
+        if (isJigsawActive()) {
+            return new WrappedInjectableClassLoader((URLClassLoader) ApplicationBuilder.class.getClassLoader());
+        }
+
+        if (isUnsafeAvailable()) {
             try {
-                injectable = UnsafeInjectable.create(urlClassLoader);
-            } catch (final Exception exception) {
-                // failed to prepare injectable with unsafe, ignored exception to let it silently switch to fallback agent injection
+                return UnsafeInjectable.create(urlClassLoader);
+            } catch (final Exception ignored) {
+                // failed to prepare injectable with unsafe, ignored exception to let it silently switch to fallback agent injection.
             }
         }
 
-        if (injectable == null) {
-            injectable = InstrumentationInjectable.create(downloadPath, repositories);
-        }
-        return injectable;
+        return injector.get();
     }
 
+    // TODO: Java support was dropped for 8, so this is not needed anymore? right?
     private static boolean isJigsawActive() {
         try {
             Class.forName("java.lang.Module");
@@ -71,6 +82,7 @@ public final class InjectableFactory {
         return false;
     }
 
+    // TODO: Do all supported versions of java have this?
     private static boolean isUnsafeAvailable() {
         try {
             Class.forName("sun.misc.Unsafe");

@@ -25,7 +25,11 @@
 package io.github.slimjar.downloader.strategy;
 
 
+import io.github.slimjar.logging.LocationAwareProcessLogger;
+import io.github.slimjar.logging.ProcessLogger;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Optional;
@@ -33,39 +37,34 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public final class FolderedFilePathStrategy implements FilePathStrategy {
-    private static final Logger LOGGER = Logger.getLogger(FolderedFilePathStrategy.class.getName());
-    private static final String DEPENDENCY_FILE_FORMAT = "%s/%s/%s/%s/%3$s-%4$s.jar";
-    private final File rootDirectory;
+    @NotNull private static final ProcessLogger LOGGER = LocationAwareProcessLogger.generic();
+    @NotNull private static final String DEPENDENCY_FILE_FORMAT = "%s/%s/%s/%s/%3$s-%4$s.jar";
+    @NotNull private final File rootDirectory;
 
-
-    private FolderedFilePathStrategy(File rootDirectory) {
+    @Contract(pure = true)
+    private FolderedFilePathStrategy(@NotNull final File rootDirectory) {
         this.rootDirectory = rootDirectory;
     }
 
     @Override
-    public File selectFileFor(Dependency dependency) {
-        final String extendedVersion = Optional.ofNullable(dependency.snapshotId()).map(s -> "-" + s).orElse("");
-        final String path = String.format(
-                DEPENDENCY_FILE_FORMAT,
-                rootDirectory.getPath(),
-                dependency.groupId().replace('.','/'),
-                dependency.artifactId(),
-                dependency.version() + extendedVersion
+    @Contract(pure = true)
+    public @NotNull File selectFileFor(@NotNull final Dependency dependency) {
+        final var extendedVersion = Optional.ofNullable(dependency.snapshotId()).map(s -> "-" + s).orElse("");
+        final var path = String.format(
+            DEPENDENCY_FILE_FORMAT,
+            rootDirectory.getPath(),
+            dependency.groupId().replace('.','/'),
+            dependency.artifactId(),
+            dependency.version() + extendedVersion
         );
-        LOGGER.log(Level.FINEST, "Selected jar file for " + dependency.artifactId() + " at " + path);
+
+        LOGGER.debug("Selected jar file for %s at %s.", dependency.artifactId(), path);
         return new File(path);
     }
 
-    public static FilePathStrategy createStrategy(final File rootDirectory) throws IllegalArgumentException {
-        if (!rootDirectory.exists()) {
-            boolean created = rootDirectory.mkdirs();
-            if (!created) {
-                throw new IllegalArgumentException("Could not create specified directory: " + rootDirectory);
-            }
-        }
-        if (!rootDirectory.isDirectory()) {
-            throw new IllegalArgumentException("Expecting a directory for download root! " + rootDirectory);
-        }
+    @Contract(value = "_ -> new", pure = true)
+    public static @NotNull FilePathStrategy createStrategy(@NotNull final File rootDirectory) throws IllegalStateException {
+        FilePathStrategy.validateDirectory(rootDirectory);
         return new FolderedFilePathStrategy(rootDirectory);
     }
 }

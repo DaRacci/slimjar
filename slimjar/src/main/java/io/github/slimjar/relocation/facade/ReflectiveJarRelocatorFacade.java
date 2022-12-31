@@ -24,20 +24,30 @@
 
 package io.github.slimjar.relocation.facade;
 
+import io.github.slimjar.exceptions.RelocatorException;
+import org.jetbrains.annotations.NotNull;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public final class ReflectiveJarRelocatorFacade implements JarRelocatorFacade {
-    private final Object relocator;
-    private final Method relocatorRunMethod;
+    @NotNull private final Object relocator;
+    @NotNull private final Method relocatorRunMethod;
 
-    ReflectiveJarRelocatorFacade(final Object relocator, final Method relocatorRunMethod) {
+    ReflectiveJarRelocatorFacade(
+        @NotNull final Object relocator,
+        @NotNull final Method relocatorRunMethod
+    ) {
         this.relocator = relocator;
         this.relocatorRunMethod = relocatorRunMethod;
     }
 
     @Override
-    public void run() throws InvocationTargetException, IllegalAccessException {
-        relocatorRunMethod.invoke(relocator);
+    public void run() throws RelocatorException {
+        try {
+            relocatorRunMethod.invoke(relocator);
+        } catch (final InvocationTargetException | IllegalAccessException err) {
+            throw new RelocatorException("Unable to invoke relocator.", err);
+        }
     }
 }

@@ -29,6 +29,7 @@ import io.github.slimjar.relocation.Relocator;
 import io.github.slimjar.relocation.meta.MetaMediator;
 import io.github.slimjar.relocation.meta.MetaMediatorFactory;
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,12 +37,17 @@ import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 
 public final class VerifyingRelocationHelper implements RelocationHelper {
-    private final FilePathStrategy outputFilePathStrategy;
-    private final Relocator relocator;
-    private final String selfHash;
-    private final MetaMediatorFactory mediatorFactory;
+    @NotNull private final FilePathStrategy outputFilePathStrategy;
+    @NotNull private final Relocator relocator;
+    @NotNull private final String selfHash;
+    @NotNull private final MetaMediatorFactory mediatorFactory;
 
-    public VerifyingRelocationHelper(final String selfHash, final FilePathStrategy outputFilePathStrategy, final Relocator relocator, final MetaMediatorFactory mediatorFactory) throws URISyntaxException, NoSuchAlgorithmException, IOException {
+    public VerifyingRelocationHelper(
+        @NotNull final String selfHash,
+        @NotNull final FilePathStrategy outputFilePathStrategy,
+        @NotNull final Relocator relocator,
+        @NotNull final MetaMediatorFactory mediatorFactory
+    ) {
         this.mediatorFactory = mediatorFactory;
         this.outputFilePathStrategy = outputFilePathStrategy;
         this.relocator = relocator;
@@ -49,16 +55,18 @@ public final class VerifyingRelocationHelper implements RelocationHelper {
     }
 
     @Override
-    public File relocate(final Dependency dependency, final File file) throws IOException, ReflectiveOperationException {
-        final File relocatedFile = outputFilePathStrategy.selectFileFor(dependency);
-        final MetaMediator metaMediator = mediatorFactory.create(relocatedFile.toPath());
+    public @NotNull File relocate(
+        @NotNull final Dependency dependency,
+        @NotNull final File file
+    ) {
+        final var relocatedFile = outputFilePathStrategy.selectFileFor(dependency);
+        final var metaMediator = mediatorFactory.create(relocatedFile.toPath());
+
         if (relocatedFile.exists()) {
             try {
-                final String ownerHash = metaMediator.readAttribute("slimjar.owner");
-                if (selfHash != null && ownerHash != null && selfHash.trim().equals(ownerHash.trim())) {
-                    return relocatedFile;
-                }
-            } catch (final Exception exception) {
+                final var ownerHash = metaMediator.readAttribute("slimjar.owner");
+                if (ownerHash != null && selfHash.trim().equals(ownerHash.trim())) return relocatedFile;
+            } catch (final IOException err) {
                 // Possible incomplete relocation present.
                 // todo: Log incident
                 //noinspection ResultOfMethodCallIgnored

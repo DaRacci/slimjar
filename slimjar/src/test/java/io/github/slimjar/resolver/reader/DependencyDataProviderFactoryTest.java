@@ -37,19 +37,16 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 import java.util.Collections;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-public class DependencyDataProviderFactoryTest {
+class DependencyDataProviderFactoryTest {
     private static final Path DEFAULT_DOWNLOAD_DIRECTORY;
     private static final Collection<Repository> CENTRAL_MIRRORS;
 
     static {
-        try {
-            CENTRAL_MIRRORS = Collections.singleton(new Repository(new URL(Repository.CENTRAL_URL)));
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        CENTRAL_MIRRORS = Collections.singleton(Repository.central());
         final String userHome = System.getProperty("user.home");
         final String defaultPath = String.format("%s/.slimjar", userHome);
         DEFAULT_DOWNLOAD_DIRECTORY = new File(defaultPath).toPath();

@@ -22,18 +22,29 @@
 // SOFTWARE.
 //
 
-package io.github.slimjar.injector;
+package io.github.slimjar.exceptions;
 
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
-public final class InjectionFailedException extends RuntimeException {
-    private final transient Dependency dependency;
-    public InjectionFailedException(Dependency dependency, Exception exception) {
-        super("SlimJar failed to inject dependency: name -> " + dependency,exception);
+public final class UnresolvedDependencyException extends DownloaderException {
+    @NotNull private final transient Dependency dependency;
+
+    @Contract(pure = true)
+    public UnresolvedDependencyException(@NotNull final Dependency dependency) {
+        super("Could not resolve dependency : " + dependency);
         this.dependency = dependency;
     }
 
-    public Dependency getDependency() {
+    @Contract(pure = true)
+    public @NotNull Dependency dependency() {
         return dependency;
+    }
+
+    @Override
+    @Contract(pure = true)
+    public @NotNull String toString() {
+        return String.format("UnresolvedDependencyException{dependency=%s}", dependency);
     }
 }

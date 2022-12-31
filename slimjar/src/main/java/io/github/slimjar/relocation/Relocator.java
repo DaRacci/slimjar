@@ -24,9 +24,15 @@
 
 package io.github.slimjar.relocation;
 
+import io.github.slimjar.exceptions.RelocatorException;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.IOException;
 
 public interface Relocator {
-    void relocate(final File input, final File output) throws IOException, ReflectiveOperationException;
+    void relocate(
+        @NotNull final File input,
+        @NotNull final File output
+    ) throws RelocatorException;
 }

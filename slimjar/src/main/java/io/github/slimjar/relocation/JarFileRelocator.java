@@ -24,28 +24,41 @@
 
 package io.github.slimjar.relocation;
 
-import io.github.slimjar.relocation.facade.JarRelocatorFacade;
+import io.github.slimjar.exceptions.RelocatorException;
 import io.github.slimjar.relocation.facade.JarRelocatorFacadeFactory;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 
 public final class JarFileRelocator implements Relocator {
-    private final Collection<RelocationRule> relocations;
-    private final JarRelocatorFacadeFactory relocatorFacadeFactory;
+    @NotNull private final Collection<RelocationRule> relocations;
+    @NotNull private final JarRelocatorFacadeFactory relocatorFacadeFactory;
 
-    public JarFileRelocator(final Collection<RelocationRule> relocations, final JarRelocatorFacadeFactory relocatorFacadeFactory) {
+    public JarFileRelocator(
+        @NotNull final Collection<RelocationRule> relocations,
+        @NotNull final JarRelocatorFacadeFactory relocatorFacadeFactory
+    ) {
         this.relocations = relocations;
         this.relocatorFacadeFactory = relocatorFacadeFactory;
     }
 
-    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Override
-    public void relocate(File input, File output) throws IOException, ReflectiveOperationException {
+    @SuppressWarnings({"ResultOfMethodCallIgnored", "java:S899"})
+    public void relocate(
+        @NotNull final File input,
+        @NotNull final File output
+    ) throws RelocatorException {
         output.getParentFile().mkdirs();
-        output.createNewFile();
-        final JarRelocatorFacade jarRelocator = relocatorFacadeFactory.createFacade(input,output, relocations);
-        jarRelocator.run();
+        try {
+            output.createNewFile();
+            relocatorFacadeFactory.createFacade(input, output, relocations).run();
+        } catch (final IOException err) {
+            throw new RelocatorException("Unable to create new file during relocation.", err);
+        } catch (final IllegalAccessException | InstantiationException | InvocationTargetException err) {
+            throw new RelocatorException("Unable to create relocator facade.", err);
+        }
     }
 }

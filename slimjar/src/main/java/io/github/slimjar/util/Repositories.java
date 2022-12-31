@@ -28,7 +28,7 @@ import io.github.slimjar.resolver.data.Repository;
 import org.jetbrains.annotations.NotNull;
 
 public final class Repositories {
-    private Repositories() {}
+    private Repositories() { }
 
     public static @NotNull String fetchFormattedUrl(@NotNull final Repository repository) {
         var repoUrl = repository.url().toString();

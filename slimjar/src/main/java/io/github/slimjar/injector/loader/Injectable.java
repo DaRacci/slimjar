@@ -24,16 +24,11 @@
 
 package io.github.slimjar.injector.loader;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URISyntaxException;
+import io.github.slimjar.exceptions.InjectorException;
+import org.jetbrains.annotations.NotNull;
+
 import java.net.URL;
-import java.net.URLClassLoader;
 
 public interface Injectable {
-    void inject(final URL url) throws IOException, InvocationTargetException, IllegalAccessException, URISyntaxException;
-    
-    static WrappedInjectableClassLoader wrap(final URLClassLoader classLoader) {
-        return new WrappedInjectableClassLoader(classLoader);
-    }
+    void inject(@NotNull final URL url) throws InjectorException;
 }

@@ -24,9 +24,13 @@
 
 package io.github.slimjar.downloader.verify;
 
+import io.github.slimjar.exceptions.VerificationException;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.IOException;
 
+@FunctionalInterface
 public interface ChecksumCalculator {
-    String calculate(final File file) throws IOException, InterruptedException;
+    @NotNull String calculate(@NotNull final File file) throws VerificationException;
 }

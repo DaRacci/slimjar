@@ -25,16 +25,35 @@
 package io.github.slimjar.downloader.strategy;
 
 import io.github.slimjar.resolver.data.Dependency;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 
+@FunctionalInterface
 public interface FilePathStrategy {
-    File selectFileFor(final Dependency dependency);
+    @NotNull File selectFileFor(@NotNull final Dependency dependency);
 
-    static FilePathStrategy createDefault(final File root) {
+    static @NotNull FilePathStrategy createDefault(@NotNull final File root) {
         return FolderedFilePathStrategy.createStrategy(root);
     }
-    static FilePathStrategy createRelocationStrategy(final File root, final String applicationName) {
+
+    @Contract(pure = true)
+    static @NotNull FilePathStrategy createRelocationStrategy(
+        @NotNull final File root,
+        @NotNull final String applicationName
+    ) {
         return RelocationFilePathStrategy.createStrategy(root, applicationName);
+    }
+
+    @Contract(pure = true)
+    static void validateDirectory(@NotNull final File rootDirectory) throws IllegalStateException {
+        if (!rootDirectory.exists() && !rootDirectory.mkdirs()) {
+            throw new IllegalStateException("Failed to create root directory for checksum file strategy (%s).".formatted(rootDirectory));
+        }
+
+        if (!rootDirectory.isDirectory()) {
+            throw new IllegalStateException("Root directory for checksum file strategy is not a directory (%s).".formatted(rootDirectory));
+        }
     }
 }

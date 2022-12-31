@@ -24,11 +24,15 @@
 
 package io.github.slimjar.relocation.meta;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.file.Path;
 
 public final class AttributeMetaMediatorFactory implements MetaMediatorFactory {
     @Override
-    public MetaMediator create(final Path path) {
+    @Contract("_ -> new")
+    public @NotNull MetaMediator create(@NotNull final Path path) {
         return new AttributeMetaMediator(path);
     }
 }

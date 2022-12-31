@@ -27,11 +27,14 @@ package io.github.slimjar.downloader;
 import io.github.slimjar.downloader.output.OutputWriterFactory;
 import io.github.slimjar.downloader.verify.DependencyVerifier;
 import io.github.slimjar.resolver.DependencyResolver;
+import org.jetbrains.annotations.NotNull;
 
 public final class URLDependencyDownloaderFactory implements DependencyDownloaderFactory {
 
     @Override
-    public DependencyDownloader create(final OutputWriterFactory outputWriterFactory, final DependencyResolver resolver, final DependencyVerifier verifier) {
-        return new URLDependencyDownloader(outputWriterFactory, resolver, verifier);
-    }
+    public @NotNull DependencyDownloader create(
+        @NotNull final OutputWriterFactory outputWriterFactory,
+        @NotNull final DependencyResolver resolver,
+        @NotNull final DependencyVerifier verifier
+    ) { return new URLDependencyDownloader(outputWriterFactory, resolver, verifier); }
 }

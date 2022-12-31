@@ -26,60 +26,63 @@ package io.github.slimjar.app.builder;
 
 import io.github.slimjar.app.AppendingApplication;
 import io.github.slimjar.app.Application;
-import io.github.slimjar.injector.DependencyInjector;
-import io.github.slimjar.injector.loader.*;
-import io.github.slimjar.resolver.ResolutionResult;
-import io.github.slimjar.resolver.data.DependencyData;
+import io.github.slimjar.injector.loader.Injectable;
+import io.github.slimjar.injector.loader.InjectableFactory;
 import io.github.slimjar.resolver.data.Repository;
-import io.github.slimjar.resolver.reader.dependency.DependencyDataProvider;
-import io.github.slimjar.resolver.reader.resolution.PreResolutionDataProvider;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
-import java.util.Map;
 import java.util.function.Function;
 
 public final class InjectingApplicationBuilder extends ApplicationBuilder {
-    private final Function<ApplicationBuilder, Injectable> injectableSupplier;
+    @NotNull private final Function<ApplicationBuilder, Injectable> injectableSupplier;
 
-    public InjectingApplicationBuilder(final String applicationName, final Injectable injectable) {
-        this(applicationName, (it) -> injectable);
-    }
+    @Contract(pure = true)
+    public InjectingApplicationBuilder(
+        @NotNull final String applicationName,
+        @NotNull final Injectable injectable
+    ) { this(applicationName, it -> injectable); }
 
-    public InjectingApplicationBuilder(final String applicationName, final Function<ApplicationBuilder, Injectable> injectableSupplier) {
+    @Contract(pure = true)
+    public InjectingApplicationBuilder(
+        @NotNull final String applicationName,
+        @NotNull final Function<ApplicationBuilder, Injectable> injectableSupplier
+    ) {
         super(applicationName);
         this.injectableSupplier = injectableSupplier;
     }
 
     @Override
-    public Application buildApplication() throws IOException, ReflectiveOperationException, URISyntaxException, NoSuchAlgorithmException, InterruptedException {
-        final DependencyDataProvider dataProvider = getDataProviderFactory().create(getDependencyFileUrl());
-        final DependencyData dependencyData = dataProvider.get();
-        final DependencyInjector dependencyInjector = createInjector();
+    @Contract(value = "-> new", mutates = "this")
+    public @NotNull Application buildApplication() {
+        final var dataProvider = getDataProviderFactory().create(getDependencyFileUrl());
+        final var dependencyData = dataProvider.get();
+        final var dependencyInjector = createInjector();
 
-        final PreResolutionDataProvider preResolutionDataProvider = getPreResolutionDataProviderFactory().create(getPreResolutionFileUrl());
-        final Map<String, ResolutionResult> preResolutionResultMap = preResolutionDataProvider.get();
+        final var preResolutionDataProvider = getPreResolutionDataProviderFactory().create(getPreResolutionFileUrl());
+        final var preResolutionResultMap = preResolutionDataProvider.get();
 
         dependencyInjector.inject(injectableSupplier.apply(this), dependencyData, preResolutionResultMap);
         return new AppendingApplication();
     }
 
-    public static ApplicationBuilder createAppending(final String applicationName) {
-        final ClassLoader classLoader = ApplicationBuilder.class.getClassLoader();
+    @Contract(value = "_ -> new", pure = true)
+    public static @NotNull ApplicationBuilder createAppending(@NotNull final String applicationName) {
+        final var classLoader = ApplicationBuilder.class.getClassLoader();
         return createAppending(applicationName, classLoader);
     }
 
-    public static ApplicationBuilder createAppending(final String applicationName, final ClassLoader classLoader) {
-        return new InjectingApplicationBuilder(applicationName, (ApplicationBuilder builder) -> {
-            try {
-                return InjectableFactory.create(builder.getDownloadDirectoryPath(), Collections.singleton(Repository.central()), classLoader);
-            } catch (URISyntaxException | ReflectiveOperationException | NoSuchAlgorithmException | IOException | InterruptedException exception) {
-                exception.printStackTrace();
-            }
-            return null;
-        });
+    @Contract(value = "_, _ -> new", pure = true)
+    public static @NotNull ApplicationBuilder createAppending(
+        @NotNull final String applicationName,
+        @NotNull final ClassLoader classLoader
+    ) {
+        return new InjectingApplicationBuilder(applicationName, (final ApplicationBuilder builder) -> InjectableFactory.create(
+            builder.getDownloadDirectoryPath(),
+            Collections.singleton(Repository.central()),
+            classLoader
+        ));
     }
 }
 

@@ -31,37 +31,38 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class MirrorSelectorTest {
-//    @Test
-//    public void testSelectorForceMirrorCentral() throws MalformedURLException {
-//        final Repository central = new Repository(new URL(Repository.CENTRAL_URL));
-//        final Repository centralMirror = new Repository(new URL(Repository.CENTRAL_URL));
-//        final Collection<Repository> original = Collections.singleton(central);
-//        final MirrorSelector mirrorSelector = new SimpleMirrorSelector();
-//        final Collection<Repository> selected = mirrorSelector.select(original, Collections.emptyList());
-//        Assertions.assertFalse(selected.contains(central), "Selection should remove central");
-//        Assertions.assertTrue(selected.contains(new Repository(new URL(Repository.CENTRAL_URL))), "Selection should contain central mirror");
-//    }
-//
-//    @Test
-//    public void testSelectorForceAltMirrorCentral() throws MalformedURLException {
-//        final Repository central = new Repository(new URL(Repository.CENTRAL_URL));
-//        final Repository centralMirror = new Repository(new URL(Repository.CENTRAL_URL));
-//
-//        final Collection<Repository> original = Collections.singleton(central);
-//        final MirrorSelector mirrorSelector = new SimpleMirrorSelector();
-//
-//        final Collection<Repository> selected = mirrorSelector.select(original, Collections.emptyList());
-//        Assertions.assertFalse(selected.contains(central), "Selection should remove central");
-//        Assertions.assertTrue(selected.contains(new Repository(new URL(Repository.CENTRAL_URL))), "Selection should contain central mirror");
-//    }
+    //    @Test
+    //    public void testSelectorForceMirrorCentral() throws MalformedURLException {
+    //        final Repository central = new Repository(new URL(Repository.CENTRAL_URL));
+    //        final Repository centralMirror = new Repository(new URL(Repository.CENTRAL_URL));
+    //        final Collection<Repository> original = Collections.singleton(central);
+    //        final MirrorSelector mirrorSelector = new SimpleMirrorSelector();
+    //        final Collection<Repository> selected = mirrorSelector.select(original, Collections.emptyList());
+    //        Assertions.assertFalse(selected.contains(central), "Selection should remove central");
+    //        Assertions.assertTrue(selected.contains(new Repository(new URL(Repository.CENTRAL_URL))), "Selection should contain central mirror");
+    //    }
+    //
+    //    @Test
+    //    public void testSelectorForceAltMirrorCentral() throws MalformedURLException {
+    //        final Repository central = new Repository(new URL(Repository.CENTRAL_URL));
+    //        final Repository centralMirror = new Repository(new URL(Repository.CENTRAL_URL));
+    //
+    //        final Collection<Repository> original = Collections.singleton(central);
+    //        final MirrorSelector mirrorSelector = new SimpleMirrorSelector();
+    //
+    //        final Collection<Repository> selected = mirrorSelector.select(original, Collections.emptyList());
+    //        Assertions.assertFalse(selected.contains(central), "Selection should remove central");
+    //        Assertions.assertTrue(selected.contains(new Repository(new URL(Repository.CENTRAL_URL))), "Selection should contain central mirror");
+    //    }
 
     @Test
     public void testSelectorReplace() throws MalformedURLException {
-        final Repository central = new Repository(new URL(Repository.CENTRAL_URL));
+        final Repository central = Repository.central();
         final Collection<Repository> centralMirrors = Collections.singleton(central);
         final Repository originalRepo = new Repository(new URL("https://a.b.c"));
         final Repository mirroredRepo = new Repository(new URL("https://d.e.f"));
@@ -69,7 +70,6 @@ public class MirrorSelectorTest {
         final Collection<Repository> original = Collections.singleton(originalRepo);
         final Collection<Mirror> mirrors = Collections.singleton(mirror);
         final MirrorSelector mirrorSelector = new SimpleMirrorSelector();
-
 
         final Collection<Repository> selected = mirrorSelector.select(original, mirrors);
         Assertions.assertFalse(selected.contains(originalRepo), "Selection should remove original");

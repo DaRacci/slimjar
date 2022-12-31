@@ -24,6 +24,7 @@
 
 package io.github.slimjar.resolver.reader.dependency;
 
+import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.data.DependencyData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -40,33 +41,39 @@ public record ModuleDependencyDataProvider(
 ) implements DependencyDataProvider {
 
     @Override
-    public @NotNull DependencyData get() throws IOException, ReflectiveOperationException {
-        final var depFileURL = getURL();
+    public @NotNull DependencyData get() {
+        try {
+            final URL depFileURL = getURL();
+            final var connection = depFileURL.openConnection();
 
-        final var connection = depFileURL.openConnection();
-        if (!(connection instanceof final JarURLConnection jarURLConnection)) {
-            throw new AssertionError("Invalid Module URL provided(Non-Jar File)");
-        }
+            if (!(connection instanceof final JarURLConnection jarURLConnection)) {
+                throw new AssertionError("Invalid Module URL provided(Non-Jar File)");
+            }
 
-        final var jarFile = jarURLConnection.getJarFile();
-        final var dependencyFileEntry = jarFile.getEntry("slimjar.json");
-        if (dependencyFileEntry == null) {
-            return new DependencyData(
-                Collections.emptySet(),
-                Collections.emptySet(),
-                Collections.emptySet(),
-                Collections.emptySet()
-            );
-        }
+            final var jarFile = jarURLConnection.getJarFile();
+            final var dependencyFileEntry = jarFile.getEntry("slimjar.json");
+            if (dependencyFileEntry == null) {
+                return new DependencyData(
+                    Collections.emptySet(),
+                    Collections.emptySet(),
+                    Collections.emptySet(),
+                    Collections.emptySet()
+                );
+            }
 
-        try (final var inputStream = jarFile.getInputStream(dependencyFileEntry)){
-            return dependencyReader.read(inputStream);
+            try (final var inputStream = jarFile.getInputStream(dependencyFileEntry)) {
+                return dependencyReader.read(inputStream);
+            }
+        } catch (final IOException err) {
+            throw new ResolutionException("Failed to get dependency data.", err);
         }
     }
 
-    /** Public for tests. */
-    @Contract(pure = true)
+    /**
+     * Public for tests.
+     */
+    @Contract(value = "-> new", pure = true)
     public @NotNull URL getURL() throws MalformedURLException {
-        return new URL("jar:file:" +moduleUrl.getFile() +"!/slimjar.json");
+        return new URL("jar:file:" + moduleUrl.getFile() + "!/slimjar.json");
     }
 }

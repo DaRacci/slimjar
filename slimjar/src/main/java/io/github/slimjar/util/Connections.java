@@ -32,12 +32,12 @@ import java.net.URL;
 import java.net.URLConnection;
 
 public final class Connections {
-    private Connections() {}
+    private Connections() { }
 
     @NotNull private static final String SLIMJAR_USER_AGENT = "SlimjarApplication/* URLDependencyDownloader";
 
     public static @NotNull URLConnection createDownloadConnection(@NotNull final URL url) throws IOException {
-        final var connection =  url.openConnection();
+        final var connection = url.openConnection();
 
         if (!(connection instanceof HttpURLConnection httpConnection)) {
             return connection;

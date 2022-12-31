@@ -24,45 +24,56 @@
 
 package io.github.slimjar.injector.loader.manifest;
 
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.IOException;
-import java.io.Writer;
-import java.net.*;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 
 public final class JarManifestGenerator implements ManifestGenerator {
-    private final Map<String, String> attributes = new HashMap<>();
-    private final URI jarURI;
+    @NotNull private final Map<String, String> attributes = new HashMap<>();
+    @NotNull private final URI jarURI;
 
-    public JarManifestGenerator(final URI jarURI) {
+    @Contract(pure = true)
+    public JarManifestGenerator(@NotNull final URI jarURI) {
         this.jarURI = jarURI;
     }
 
     @Override
-    public ManifestGenerator attribute(final String key, final String value) {
+    @Contract(value = "_, _ -> this", mutates = "this")
+    public @NotNull ManifestGenerator attribute(
+        final @NotNull String key,
+        final @NotNull String value
+    ) {
         attributes.put(key, value);
         return this;
     }
 
     @Override
     public void generate() throws IOException {
-        final Map<String, String> env = new HashMap<>();
-        env.put("create", "true");
-        final URI uri = URI.create(String.format("jar:%s", jarURI));
-        try (final FileSystem fs = FileSystems.newFileSystem(uri, env)) {
+        final var env = Map.of("create", "true");
+
+        final var uri = URI.create(String.format("jar:%s", jarURI));
+        try (final var fs = FileSystems.newFileSystem(uri, env)) {
             final Path nf = fs.getPath("META-INF/MANIFEST.MF");
             Files.createDirectories(nf.getParent());
-            try (final Writer writer = Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE)) {
-               for (Map.Entry<String, String> entry : attributes.entrySet()) {
-                   writer.write(String.format("%s: %s%n", entry.getKey(), entry.getValue()));
-               }
+            try (final var writer = Files.newBufferedWriter(nf, StandardCharsets.UTF_8, StandardOpenOption.CREATE)) {
+                for (final var entry : attributes.entrySet()) {
+                    writer.write(String.format("%s: %s%n", entry.getKey(), entry.getValue()));
+                }
             }
         }
     }
 
-    public static ManifestGenerator with(final URI uri) {
+    @Contract(value = "_ -> new", pure = true)
+    public static @NotNull ManifestGenerator with(@NotNull final URI uri) {
         return new JarManifestGenerator(uri);
     }
 }

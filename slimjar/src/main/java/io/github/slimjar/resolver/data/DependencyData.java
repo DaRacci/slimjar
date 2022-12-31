@@ -44,10 +44,10 @@ public record DependencyData(
 
     @Contract(pure = true)
     public DependencyData(
-        @NotNull final Collection<@NotNull Mirror> mirrors,
-        @NotNull final Collection<@NotNull Repository> repositories,
-        @NotNull final Collection<@NotNull Dependency> dependencies,
-        @NotNull final Collection<@NotNull RelocationRule> relocations
+        @NotNull final Collection<Mirror> mirrors,
+        @NotNull final Collection<Repository> repositories,
+        @NotNull final Collection<Dependency> dependencies,
+        @NotNull final Collection<RelocationRule> relocations
     ) {
         this.mirrors = Collections.unmodifiableCollection(mirrors);
         this.repositories = Collections.unmodifiableCollection(repositories);

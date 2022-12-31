@@ -27,6 +27,7 @@ package io.github.slimjar.injector.agent;
 import io.github.slimjar.app.builder.ApplicationBuilder;
 import io.github.slimjar.app.module.ModuleExtractor;
 import io.github.slimjar.app.module.TemporaryModuleExtractor;
+import io.github.slimjar.exceptions.InjectorException;
 import io.github.slimjar.injector.loader.InjectableClassLoader;
 import io.github.slimjar.injector.loader.InstrumentationInjectable;
 import io.github.slimjar.injector.loader.IsolatedInjectableClassLoader;
@@ -34,71 +35,82 @@ import io.github.slimjar.injector.loader.manifest.JarManifestGenerator;
 import io.github.slimjar.relocation.JarFileRelocator;
 import io.github.slimjar.relocation.PassthroughRelocator;
 import io.github.slimjar.relocation.RelocationRule;
-import io.github.slimjar.relocation.Relocator;
 import io.github.slimjar.relocation.facade.JarRelocatorFacadeFactory;
 import io.github.slimjar.resolver.data.Dependency;
 import io.github.slimjar.resolver.data.DependencyData;
 import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.util.Packages;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Method;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.UUID;
 
 public final class ByteBuddyInstrumentationFactory implements InstrumentationFactory {
-    public static final String AGENT_JAR = "loader-agent.isolated-jar";
-    private static final String AGENT_PACKAGE = "io#github#slimjar#injector#agent";
-    private static final String AGENT_CLASS = "ClassLoaderAgent";
-    private static final String BYTE_BUDDY_AGENT_CLASS = "net#bytebuddy#agent#ByteBuddyAgent";
+    @NotNull public static final String AGENT_JAR = "loader-agent.isolated-jar";
+    @NotNull private static final String AGENT_PACKAGE = "io#github#slimjar#injector#agent";
+    @NotNull private static final String AGENT_CLASS = "ClassLoaderAgent";
+    @NotNull private static final String BYTE_BUDDY_AGENT_CLASS = "net#bytebuddy#agent#ByteBuddyAgent";
 
-    private final URL agentJarUrl;
-    private final ModuleExtractor extractor;
-    private final JarRelocatorFacadeFactory relocatorFacadeFactory;
+    @NotNull private final URL agentJarUrl;
+    @NotNull private final ModuleExtractor extractor;
+    @NotNull private final JarRelocatorFacadeFactory relocatorFacadeFactory;
 
-    public ByteBuddyInstrumentationFactory(final JarRelocatorFacadeFactory relocatorFacadeFactory) {
-        this.relocatorFacadeFactory = relocatorFacadeFactory;
-        this.agentJarUrl = InstrumentationInjectable.class.getClassLoader().getResource(AGENT_JAR);
-        this.extractor = new TemporaryModuleExtractor();
+    public ByteBuddyInstrumentationFactory(@NotNull final JarRelocatorFacadeFactory relocatorFacadeFactory) throws NullPointerException {
+        this(
+            Objects.requireNonNull(InstrumentationInjectable.class.getClassLoader().getResource(AGENT_JAR)),
+            new TemporaryModuleExtractor(),
+            relocatorFacadeFactory
+        );
     }
 
-
-    public ByteBuddyInstrumentationFactory(final URL agentJarUrl, final ModuleExtractor extractor, final JarRelocatorFacadeFactory relocatorFacadeFactory) {
+    @Contract(pure = true)
+    public ByteBuddyInstrumentationFactory(
+        @NotNull final URL agentJarUrl,
+        @NotNull final ModuleExtractor extractor,
+        @NotNull final JarRelocatorFacadeFactory relocatorFacadeFactory
+    ) {
         this.agentJarUrl = agentJarUrl;
         this.extractor = extractor;
         this.relocatorFacadeFactory = relocatorFacadeFactory;
     }
 
     @Override
-    public Instrumentation create() throws IOException, ReflectiveOperationException, URISyntaxException, NoSuchAlgorithmException, InterruptedException {
-        final URL extractedURL = extractor.extractModule(agentJarUrl, "loader-agent");
+    public @NotNull Instrumentation create() throws InjectorException {
+        final var extractedURL = extractor.extractModule(agentJarUrl, "loader-agent");
+        final var pattern = generatePattern();
+        final var relocatedAgentClass = String.format("%s.%s", pattern, AGENT_CLASS);
+        final var relocationRule = new RelocationRule(Packages.fix(AGENT_PACKAGE), pattern, Collections.emptySet(), Collections.emptySet());
+        final var relocator = new JarFileRelocator(Collections.singleton(relocationRule), relocatorFacadeFactory);
+        final File inputFile;
+        final File relocatedFile;
+        try {
+            inputFile = new File(extractedURL.toURI());
+            relocatedFile = File.createTempFile("slimjar-agent", ".jar");
+        } catch (final URISyntaxException | IOException err) {
+            throw new InjectorException("Failed to create temporary file for relocated agent", err);
+        }
 
-        final String pattern = generatePattern();
-        final String relocatedAgentClass = String.format("%s.%s", pattern, AGENT_CLASS);
-        final RelocationRule relocationRule = new RelocationRule(Packages.fix(AGENT_PACKAGE), pattern, Collections.emptySet(), Collections.emptySet());
-        final Relocator relocator = new JarFileRelocator(Collections.singleton(relocationRule), relocatorFacadeFactory);
-        final File inputFile = new File(extractedURL.toURI());
-        final File relocatedFile = File.createTempFile("slimjar-agent", ".jar");
-
-        final InjectableClassLoader classLoader = new IsolatedInjectableClassLoader();
+        final var classLoader = new IsolatedInjectableClassLoader();
         relocator.relocate(inputFile, relocatedFile);
 
         JarManifestGenerator.with(relocatedFile.toURI())
-                .attribute("Manifest-Version", "1.0")
-                .attribute("Agent-Class", relocatedAgentClass)
-                .generate();
+            .attribute("Manifest-Version", "1.0")
+            .attribute("Agent-Class", relocatedAgentClass)
+            .generate();
 
         ApplicationBuilder.injecting("SlimJar-Agent", classLoader)
-                .dataProviderFactory(dataUrl -> () -> getDependency())
-                .relocatorFactory(rules -> new PassthroughRelocator())
-                .relocationHelperFactory(rel -> (dependency, file) -> file)
-                .build();
+            .dataProviderFactory(dataUrl -> () -> getDependency())
+            .relocatorFactory(rules -> new PassthroughRelocator())
+            .relocationHelperFactory(rel -> (dependency, file) -> file)
+            .build();
 
         final Class<?> byteBuddyAgentClass = Class.forName(Packages.fix(BYTE_BUDDY_AGENT_CLASS), true, classLoader);
         final Method attachMethod = byteBuddyAgentClass.getMethod("attach", File.class, String.class, String.class);
@@ -116,25 +128,25 @@ public final class ByteBuddyInstrumentationFactory implements InstrumentationFac
         return (Instrumentation) instrMethod.invoke(null);
     }
 
-
-    private static DependencyData getDependency() throws MalformedURLException {
-        final Dependency byteBuddy = new Dependency(
-                "net.bytebuddy",
-                "byte-buddy-agent",
-                "1.11.0",
-                null,
-                Collections.emptyList()
+    private static @NotNull DependencyData getDependency() {
+        final var byteBuddy = new Dependency(
+            "net.bytebuddy",
+            "byte-buddy-agent",
+            "1.11.0",
+            null,
+            Collections.emptyList()
         );
-        final Repository centralRepository = new Repository(new URL(Repository.CENTRAL_URL));
+
         return new DependencyData(
-                Collections.emptySet(),
-                Collections.singleton(centralRepository),
-                Collections.singleton(byteBuddy),
-                Collections.emptyList()
+            Collections.emptySet(),
+            Collections.singleton(Repository.central()),
+            Collections.singleton(byteBuddy),
+            Collections.emptyList()
         );
     }
 
-    private static String generatePattern() {
-        return String.format("slimjar.%s", UUID.randomUUID());
+    @Contract(pure = true)
+    private static @NotNull String generatePattern() {
+        return "slimjar.%s".formatted(UUID.randomUUID());
     }
 }
