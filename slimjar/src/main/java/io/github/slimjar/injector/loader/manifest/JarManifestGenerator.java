@@ -24,6 +24,7 @@
 
 package io.github.slimjar.injector.loader.manifest;
 
+import io.github.slimjar.exceptions.InjectorException;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -57,7 +58,7 @@ public final class JarManifestGenerator implements ManifestGenerator {
     }
 
     @Override
-    public void generate() throws IOException {
+    public void generate() throws InjectorException {
         final var env = Map.of("create", "true");
 
         final var uri = URI.create(String.format("jar:%s", jarURI));
@@ -69,6 +70,8 @@ public final class JarManifestGenerator implements ManifestGenerator {
                     writer.write(String.format("%s: %s%n", entry.getKey(), entry.getValue()));
                 }
             }
+        } catch (final IOException err) {
+            throw new InjectorException("Failed to generate manifest.", err);
         }
     }
 

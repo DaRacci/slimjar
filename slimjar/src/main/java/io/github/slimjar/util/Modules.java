@@ -25,29 +25,33 @@
 package io.github.slimjar.util;
 
 import io.github.slimjar.app.module.ModuleExtractor;
+import io.github.slimjar.exceptions.ResolutionException;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public final class Modules {
 
     private Modules() { }
 
-    public static @Nullable URL findModule(@NotNull final String moduleName) {
+    public static @NotNull URL findModule(@NotNull final String moduleName) {
         final ClassLoader classLoader = Modules.class.getClassLoader();
-        return classLoader.getResource(moduleName + ".isolated-jar");
+        return Objects.requireNonNull(classLoader.getResource(moduleName + ".isolated-jar"));
     }
 
     public static @NotNull URL[] extract(
         @NotNull final ModuleExtractor extractor,
-        @NotNull final Collection<@NotNull String> modules
-    ) throws IOException {
+        @NotNull final Collection<String> modules
+    ) {
         final var urls = new URL[modules.size()];
         int index = 0;
         for (final var moduleName : modules) {
@@ -59,14 +63,22 @@ public final class Modules {
         return urls;
     }
 
-    public static @NotNull Collection<@NotNull String> findLocalModules() throws URISyntaxException, IOException {
+    public static @NotNull Set<String> findLocalModules() throws ResolutionException {
         final var url = Modules.class.getProtectionDomain().getCodeSource().getLocation();
-        final var resourcesPath = Paths.get(url.toURI());
+        final Path resourcesPath;
+        try {
+            resourcesPath = Paths.get(url.toURI());
+        } catch (final URISyntaxException err) {
+            // Shouldn't be possible.
+            throw new ResolutionException("Failed to resolve local modules", err);
+        }
 
         try (final var stream = Files.walk(resourcesPath, 1)) {
             return stream.filter(path -> path.endsWith(".isolated-jar"))
                 .map(path -> path.getFileName().toString())
-                .toList();
+                .collect(Collectors.toUnmodifiableSet());
+        } catch (final IOException err) {
+            throw new ResolutionException("Encountered exception while walking files.", err);
         }
     }
 }

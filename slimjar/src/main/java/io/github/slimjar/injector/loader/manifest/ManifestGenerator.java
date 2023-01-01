@@ -24,9 +24,8 @@
 
 package io.github.slimjar.injector.loader.manifest;
 
+import io.github.slimjar.exceptions.InjectorException;
 import org.jetbrains.annotations.NotNull;
-
-import java.io.IOException;
 
 public interface ManifestGenerator {
     @NotNull ManifestGenerator attribute(
@@ -34,5 +33,5 @@ public interface ManifestGenerator {
         @NotNull final String value
     );
 
-    void generate() throws IOException;
+    void generate() throws InjectorException;
 }

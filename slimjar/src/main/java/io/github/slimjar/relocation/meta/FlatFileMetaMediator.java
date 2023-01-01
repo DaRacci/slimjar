@@ -24,6 +24,7 @@
 
 package io.github.slimjar.relocation.meta;
 
+import io.github.slimjar.exceptions.RelocatorException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,20 +40,28 @@ public final class FlatFileMetaMediator implements MetaMediator {
     }
 
     @Override
-    public @Nullable String readAttribute(@NotNull final String name) throws IOException {
+    public @Nullable String readAttribute(@NotNull final String name) throws RelocatorException {
         final var attributeFile = metaFolderPath.resolve(name);
         if (Files.notExists(attributeFile) || Files.isDirectory(attributeFile)) return null;
-        return new String(Files.readAllBytes(attributeFile));
+        try {
+            return Files.readString(attributeFile);
+        } catch (final IOException err) {
+            throw new RelocatorException("Failed to read attribute " + name, err);
+        }
     }
 
     @Override
     public void writeAttribute(
         @NotNull final String name,
         @NotNull final String value
-    ) throws IOException {
+    ) throws RelocatorException {
         final var attributeFile = metaFolderPath.resolve(name);
-        Files.deleteIfExists(attributeFile);
-        Files.createFile(attributeFile);
-        Files.write(attributeFile, value.getBytes());
+        try {
+            Files.deleteIfExists(attributeFile);
+            Files.createFile(attributeFile);
+            Files.write(attributeFile, value.getBytes());
+        } catch (final IOException err) {
+            throw new RelocatorException("Failed to write attribute " + name, err);
+        }
     }
 }
