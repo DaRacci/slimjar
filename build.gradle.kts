@@ -2,7 +2,7 @@ import com.hierynomus.gradle.license.LicenseBasePlugin
 
 plugins {
     alias(libs.plugins.kotlin.jvm)
-    id("dev.racci.minix") version "0.1.13"
+    id("dev.racci.minix") version "1.7.20-336"
     alias(libs.plugins.minix.publication)
     alias(libs.plugins.gradle.license)
 }
