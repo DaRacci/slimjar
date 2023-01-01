@@ -1,5 +1,6 @@
 package io.github.slimjar.resolver.reader.resolution;
 
+import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.reader.facade.GsonFacade;
 import io.github.slimjar.resolver.reader.facade.GsonFacadeFactory;
 import org.jetbrains.annotations.Contract;
@@ -12,8 +13,8 @@ public record GsonPreResolutionDataProviderFactory(
 ) implements PreResolutionDataProviderFactory {
 
     @Contract(pure = true)
-    public GsonPreResolutionDataProviderFactory(@NotNull final GsonFacadeFactory gson) throws ReflectiveOperationException {
-        this(gson.createFacade());
+    public GsonPreResolutionDataProviderFactory(@NotNull final GsonFacadeFactory gson) throws ResolutionException {
+        this(gson.fromFactory());
     }
 
     @Override

@@ -39,7 +39,7 @@ public final class GsonDependencyDataProviderFactory implements DependencyDataPr
 
     @Contract(pure = true)
     public GsonDependencyDataProviderFactory(@NotNull final GsonFacadeFactory gsonFactory) throws ResolutionException {
-        this.gsonFacade = DependencyDataProviderFactory.fromFactory(gsonFactory);
+        this.gsonFacade = gsonFactory.fromFactory();
     }
 
     @Contract(value = "_ -> new", pure = true)
