@@ -1,4 +1,4 @@
-package io.github.slimjar.extension
+package dev.racci.slimjar.extension
 
 import io.github.slimjar.relocation.RelocationConfig
 import io.github.slimjar.relocation.RelocationRule

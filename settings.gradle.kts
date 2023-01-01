@@ -6,7 +6,7 @@ include("slimjar", "gradle-plugin", "loader-agent")
 
 pluginManagement {
     repositories {
-        mavenLocal() { mavenContent { snapshotsOnly() }}
+        mavenLocal { mavenContent { snapshotsOnly() } }
         mavenCentral()
         gradlePluginPortal()
         maven("https://papermc.io/repo/repository/maven-public/")

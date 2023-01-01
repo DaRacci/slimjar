@@ -1,12 +1,14 @@
-package io.github.slimjar.extensions
+package dev.racci.slimjar.extensions
 
 import arrow.core.Option
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_API_CONFIGURATION_NAME
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_CONFIGURATION_NAME
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_EXTENSION_NAME
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_JAR_TASK_NAME
-import io.github.slimjar.data.Targetable
-import io.github.slimjar.extension.SlimJarExtension
+import dev.racci.slimjar.data.Targetable
+import dev.racci.slimjar.extension.SlimJarExtension
+import io.github.slimjar.task.SlimJarTask
+import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.Project
 import org.gradle.api.Task
@@ -58,6 +60,25 @@ public inline fun <reified T : Task> KotlinTarget.targetTask(
 
 public inline fun <reified T : Task> KotlinTarget.nullableTargetTask(taskName: String): TaskProvider<T>? = runCatching { targetTask<T>(taskName) }.getOrNull()
 
+public val KotlinSourceSet.slimConfiguration: Option<Configuration>
+    get() = Option.fromNullable(project().configurations.findByName(slimConfigurationName))
+
+public val KotlinSourceSet.slimApiConfiguration: Option<Configuration>
+    get() = Option.fromNullable(project().configurations.findByName(slimApiConfigurationName))
+
+public val KotlinTarget.slimJarTaskName: String
+    get() = SLIM_JAR_TASK_NAME.forTarget(this)
+
+public val KotlinTarget.slimJarTask: TaskProvider<SlimJarTask>
+    get() = project.tasks.named<SlimJarTask>(slimJarTaskName)
+
+public val KotlinTarget.slimJar: SlimJarExtension
+    get() = project.extensions.getByName<SlimJarExtension>(SLIM_EXTENSION_NAME.forTarget(this))
+
+public fun KotlinTarget.slimJarTask(action: Action<in SlimJarTask>): Unit = slimJarTask.configure(action)
+
+public fun KotlinTarget.slimJar(action: Action<in SlimJarExtension>): SlimJarExtension = slimJar.also(action::execute)
+
 @PublishedApi
 internal val KotlinSourceSet.slimConfigurationName: String
     get() = SLIM_CONFIGURATION_NAME.forSourceSet(this)
@@ -65,18 +86,6 @@ internal val KotlinSourceSet.slimConfigurationName: String
 @PublishedApi
 internal val KotlinSourceSet.slimApiConfigurationName: String
     get() = SLIM_API_CONFIGURATION_NAME.forSourceSet(this)
-
-public val KotlinSourceSet.slimConfiguration: Option<Configuration>
-    get() = Option.fromNullable(project().configurations.findByName(slimConfigurationName))
-
-public val KotlinSourceSet.slimApiConfiguration: Option<Configuration>
-    get() = Option.fromNullable(project().configurations.findByName(slimApiConfigurationName))
-
-public val KotlinTarget.slimJarTask: String
-    get() = SLIM_JAR_TASK_NAME.forTarget(this)
-
-public val KotlinTarget.slimJar: SlimJarExtension
-    get() = project.extensions.getByName<SlimJarExtension>(SLIM_EXTENSION_NAME.forTarget(this))
 
 @PublishedApi
 internal fun KotlinSourceSet.project(): Project {

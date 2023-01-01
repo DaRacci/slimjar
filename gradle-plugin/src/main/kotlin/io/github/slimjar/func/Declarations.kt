@@ -37,13 +37,3 @@ public val Project.performCompileTimeResolution: Boolean
  */
 public val Project.slimInjectToIsolated: Boolean
     get() = findProperty("slimjar.default.isolated.inject")?.toString()?.toBoolean() ?: true
-
-// /**
-// * Extension for KDSL support
-// */
-// public fun DependencyHandlerScope.slimjar(version: String = "+"): String = slimJarLib(version)
-//
-// /**
-// * Extension for KDSL support
-// */
-// public fun DependencyHandler.slimjar(version: String = "+"): String = slimJarLib(version)
