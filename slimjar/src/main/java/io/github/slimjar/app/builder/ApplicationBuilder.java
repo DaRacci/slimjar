@@ -76,6 +76,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Objects;
 
 /**
  * Serves as a configuration for different components slimjar will use during injection.
@@ -317,21 +318,21 @@ public abstract class ApplicationBuilder {
     }
 
     @Contract(mutates = "this")
-    protected final @Nullable URL getDependencyFileUrl() {
+    protected final @NotNull URL getDependencyFileUrl() {
         if (dependencyFileUrl == null) {
             this.dependencyFileUrl = getClass().getClassLoader().getResource("slimjar.json");
         }
 
-        return dependencyFileUrl;
+        return Objects.requireNonNull(dependencyFileUrl);
     }
 
     @Contract(mutates = "this")
-    protected final @Nullable URL getPreResolutionFileUrl() {
+    protected final @NotNull URL getPreResolutionFileUrl() {
         if (preResolutionFileUrl == null) {
             this.preResolutionFileUrl = getClass().getClassLoader().getResource("slimjar-resolutions.json");
         }
 
-        return preResolutionFileUrl;
+        return Objects.requireNonNull(preResolutionFileUrl);
     }
 
     @Contract(mutates = "this")
