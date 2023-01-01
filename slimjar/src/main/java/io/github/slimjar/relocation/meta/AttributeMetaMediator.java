@@ -42,13 +42,13 @@ public final class AttributeMetaMediator implements MetaMediator {
     }
 
     @Override
-    public @NotNull String readAttribute(@NotNull final String name) {
+    public @Nullable String readAttribute(@NotNull final String name) {
         try {
             final var buf = ByteBuffer.allocate(view.size(name));
             view.read(name, buf);
             buf.flip();
             return Charset.defaultCharset().decode(buf).toString();
-        } catch (final Exception exception) {
+        } catch (final IOException ignored) {
             return null;
         }
     }
