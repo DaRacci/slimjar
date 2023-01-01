@@ -89,7 +89,7 @@ public final class ResolutionResult {
         if (!(o instanceof ResolutionResult otherResult)) return false;
 
         // String comparison to avoid all blocking calls
-        return Objects.equals(dependencyURL != null ? dependencyURL.toString() : null, otherResult.dependencyURL != null ? otherResult.dependencyURL.toString() : null) &&
+        return Objects.equals(dependencyURL.toString(), otherResult.dependencyURL.toString()) &&
             Objects.equals(checksumURL != null ? checksumURL.toString() : null, otherResult.checksumURL != null ? otherResult.checksumURL.toString() : null) &&
             aggregator == otherResult.aggregator &&
             checked == otherResult.checked;
@@ -99,7 +99,7 @@ public final class ResolutionResult {
     @Contract(pure = true)
     public int hashCode() {
         return Objects.hash(
-            dependencyURL != null ? dependencyURL.toString() : null,
+            dependencyURL.toString(),
             checksumURL != null ? checksumURL.toString() : null,
             aggregator,
             checked

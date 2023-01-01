@@ -28,13 +28,12 @@ import io.github.slimjar.resolver.data.Mirror;
 import io.github.slimjar.resolver.data.Repository;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.MalformedURLException;
 import java.util.Collection;
 
 @FunctionalInterface
 public interface MirrorSelector {
-    @NotNull Collection<@NotNull Repository> select(
-        @NotNull final Collection<@NotNull Repository> mainRepositories,
-        @NotNull final Collection<@NotNull Mirror> mirrors
+    @NotNull Collection<Repository> select(
+        @NotNull final Collection<Repository> mainRepositories,
+        @NotNull final Collection<Mirror> mirrors
     );
 }

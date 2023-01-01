@@ -29,7 +29,6 @@ import io.github.slimjar.exceptions.ResolutionException;
 import io.github.slimjar.resolver.data.DependencyData;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
 import java.io.InputStream;
 
 @FunctionalInterface

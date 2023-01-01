@@ -2,13 +2,10 @@
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     `maven-publish`
-    alias(libs.plugins.shadow)
-    id(libs.plugins.kotlin.plugin.serialization.get().pluginId)
 }
 
 dependencies {
     compileOnly("org.jetbrains:annotations:23.1.0")
-    compileOnly(libs.kotlinx.serialization.core)
 
     testImplementation("org.jetbrains:annotations:23.1.0")
     testImplementation("me.lucko:jar-relocator:1.5")
