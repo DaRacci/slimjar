@@ -8,5 +8,5 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface PreResolutionDataProvider {
-    @NotNull Map<@NotNull String, @NotNull ResolutionResult> get() throws IOException, ReflectiveOperationException;
+    @NotNull Map<String, ResolutionResult> get();
 }

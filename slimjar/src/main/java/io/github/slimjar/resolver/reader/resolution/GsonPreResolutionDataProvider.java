@@ -26,7 +26,7 @@ public final class GsonPreResolutionDataProvider implements PreResolutionDataPro
 
     @Override
     @Contract(pure = true)
-    public @NotNull Map<@NotNull String, @NotNull ResolutionResult> get() throws IOException, ReflectiveOperationException {
+    public @NotNull Map<@NotNull String, @NotNull ResolutionResult> get() {
         if (cachedData != null) {
             return cachedData;
         }
