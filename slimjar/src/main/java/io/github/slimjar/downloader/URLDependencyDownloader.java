@@ -89,7 +89,7 @@ public final class URLDependencyDownloader implements DependencyDownloader {
         final InputStream inputStream;
         try {
             connection = Connections.createDownloadConnection(url);
-             inputStream= connection.getInputStream();
+            inputStream = connection.getInputStream();
         } catch (final IOException err) {
             throw new DownloaderException("Failed to connect to " + url, err);
         }
@@ -136,10 +136,12 @@ public final class URLDependencyDownloader implements DependencyDownloader {
     ) throws DownloaderException {
         try {
             if (expectedOutputFile.exists()) Files.delete(expectedOutputFile.toPath());
-            verifier.getChecksumFile(dependency)
+
+            final var checksumFile = verifier.getChecksumFile(dependency)
                 .filter(File::exists)
-                .map(File::toPath)
-                .ifPresent(Files::delete);
+                .map(File::toPath);
+            if (checksumFile.isEmpty()) return;
+            Files.delete(checksumFile.get());
         } catch (final IOException err) {
             throw new DownloaderException("Failed to cleanup existing files.", err);
         }

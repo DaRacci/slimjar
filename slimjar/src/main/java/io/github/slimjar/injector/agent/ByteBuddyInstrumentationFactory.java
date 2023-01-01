@@ -28,7 +28,6 @@ import io.github.slimjar.app.builder.ApplicationBuilder;
 import io.github.slimjar.app.module.ModuleExtractor;
 import io.github.slimjar.app.module.TemporaryModuleExtractor;
 import io.github.slimjar.exceptions.InjectorException;
-import io.github.slimjar.injector.loader.InjectableClassLoader;
 import io.github.slimjar.injector.loader.InstrumentationInjectable;
 import io.github.slimjar.injector.loader.IsolatedInjectableClassLoader;
 import io.github.slimjar.injector.loader.manifest.JarManifestGenerator;
@@ -46,7 +45,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
-import java.lang.reflect.Method;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collections;
@@ -107,25 +106,29 @@ public final class ByteBuddyInstrumentationFactory implements InstrumentationFac
             .generate();
 
         ApplicationBuilder.injecting("SlimJar-Agent", classLoader)
-            .dataProviderFactory(dataUrl -> () -> getDependency())
+            .dataProviderFactory(dataUrl -> ByteBuddyInstrumentationFactory::getDependency)
             .relocatorFactory(rules -> new PassthroughRelocator())
             .relocationHelperFactory(rel -> (dependency, file) -> file)
             .build();
 
-        final Class<?> byteBuddyAgentClass = Class.forName(Packages.fix(BYTE_BUDDY_AGENT_CLASS), true, classLoader);
-        final Method attachMethod = byteBuddyAgentClass.getMethod("attach", File.class, String.class, String.class);
+        try {
+            final var byteBuddyAgentClass = Class.forName(Packages.fix(BYTE_BUDDY_AGENT_CLASS), true, classLoader);
+            final var attachMethod = byteBuddyAgentClass.getMethod("attach", File.class, String.class, String.class);
 
-        final Class<?> processHandle = Class.forName("java.lang.ProcessHandle");
-        final Method currentMethod = processHandle.getMethod("current");
-        final Method pidMethod = processHandle.getMethod("pid");
-        final Object currentProcess = currentMethod.invoke(processHandle);
-        final Long processId = (Long) pidMethod.invoke(currentProcess);
+            final var processHandle = Class.forName("java.lang.ProcessHandle");
+            final var currentMethod = processHandle.getMethod("current");
+            final var pidMethod = processHandle.getMethod("pid");
+            final var currentProcess = currentMethod.invoke(processHandle);
+            final var processId = (Long) pidMethod.invoke(currentProcess);
 
-        attachMethod.invoke(null, relocatedFile, String.valueOf(processId), "");
+            attachMethod.invoke(null, relocatedFile, String.valueOf(processId), "");
 
-        final Class<?> agentClass = Class.forName(relocatedAgentClass, true, ClassLoader.getSystemClassLoader());
-        final Method instrMethod = agentClass.getMethod("getInstrumentation");
-        return (Instrumentation) instrMethod.invoke(null);
+            final var agentClass = Class.forName(relocatedAgentClass, true, ClassLoader.getSystemClassLoader());
+            final var instrMethod = agentClass.getMethod("getInstrumentation");
+            return (Instrumentation) instrMethod.invoke(null);
+        } catch (final ClassNotFoundException | InvocationTargetException | NoSuchMethodException | IllegalAccessException err) {
+            throw new InjectorException("Encountered exception while creating ByteBuddy instructions.", err);
+        }
     }
 
     private static @NotNull DependencyData getDependency() {

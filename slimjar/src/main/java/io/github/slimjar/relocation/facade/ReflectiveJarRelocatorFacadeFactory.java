@@ -93,10 +93,10 @@ public final class ReflectiveJarRelocatorFacadeFactory implements JarRelocatorFa
     ) {
         try {
             return relocationConstructor.newInstance(
-                rule.getOriginalPackagePattern(),
-                rule.getRelocatedPackagePattern(),
-                rule.getExclusions(),
-                rule.getInclusions()
+                rule.originalPackagePattern(),
+                rule.relocatedPackagePattern(),
+                rule.exclusions(),
+                rule.inclusions()
             );
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             return null;

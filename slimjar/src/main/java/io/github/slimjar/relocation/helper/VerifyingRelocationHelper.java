@@ -26,15 +26,11 @@ package io.github.slimjar.relocation.helper;
 
 import io.github.slimjar.downloader.strategy.FilePathStrategy;
 import io.github.slimjar.relocation.Relocator;
-import io.github.slimjar.relocation.meta.MetaMediator;
 import io.github.slimjar.relocation.meta.MetaMediatorFactory;
 import io.github.slimjar.resolver.data.Dependency;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.NoSuchAlgorithmException;
 
 public final class VerifyingRelocationHelper implements RelocationHelper {
     @NotNull private final FilePathStrategy outputFilePathStrategy;
@@ -63,16 +59,10 @@ public final class VerifyingRelocationHelper implements RelocationHelper {
         final var metaMediator = mediatorFactory.create(relocatedFile.toPath());
 
         if (relocatedFile.exists()) {
-            try {
-                final var ownerHash = metaMediator.readAttribute("slimjar.owner");
-                if (ownerHash != null && selfHash.trim().equals(ownerHash.trim())) return relocatedFile;
-            } catch (final IOException err) {
-                // Possible incomplete relocation present.
-                // todo: Log incident
-                //noinspection ResultOfMethodCallIgnored
-                relocatedFile.delete();
-            }
+            final var ownerHash = metaMediator.readAttribute("slimjar.owner");
+            if (ownerHash != null && selfHash.trim().equals(ownerHash.trim())) return relocatedFile;
         }
+
         relocator.relocate(file, relocatedFile);
         metaMediator.writeAttribute("slimjar.owner", selfHash);
         return relocatedFile;

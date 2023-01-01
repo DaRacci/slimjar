@@ -25,12 +25,14 @@
 package io.github.slimjar.app.builder;
 
 import io.github.slimjar.app.Application;
+import io.github.slimjar.exceptions.SlimJarException;
 import io.github.slimjar.injector.loader.IsolatedInjectableClassLoader;
 import io.github.slimjar.util.Modules;
 import io.github.slimjar.util.Parameters;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 
 public final class IsolatedApplicationBuilder extends ApplicationBuilder {
@@ -50,7 +52,7 @@ public final class IsolatedApplicationBuilder extends ApplicationBuilder {
 
     @Override
     @Contract(value = "-> new", mutates = "this")
-    public @NotNull Application buildApplication() {
+    public @NotNull Application buildApplication() throws SlimJarException {
         final var injector = createInjector();
         final var moduleUrls = Modules.extract(isolationConfiguration.moduleExtractor(), isolationConfiguration.modules());
 
@@ -71,10 +73,13 @@ public final class IsolatedApplicationBuilder extends ApplicationBuilder {
             injector.inject(classLoader, dependencyData, preResolutionResultMap);
         }
 
-        final var applicationClass = (Class<Application>) Class.forName(isolationConfiguration.applicationClass(), true, classLoader);
-
-        // TODO:: Fix constructor resolution
-        return applicationClass.getConstructor(Parameters.typesFrom(arguments)).newInstance(arguments);
+        try {
+            final var applicationClass = (Class<Application>) Class.forName(isolationConfiguration.applicationClass(), true, classLoader);
+            // TODO:: Fix constructor resolution
+            return applicationClass.getConstructor(Parameters.typesFrom(arguments)).newInstance(arguments);
+        } catch (final ClassNotFoundException | InvocationTargetException | InstantiationException | IllegalAccessException | NoSuchMethodException err) {
+            throw new SlimJarException("Failed to reflectively create application class.", err);
+        }
     }
 
 }
