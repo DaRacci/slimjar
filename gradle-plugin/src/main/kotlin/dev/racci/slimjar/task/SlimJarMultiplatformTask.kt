@@ -1,13 +1,14 @@
-package io.github.slimjar.task
+package dev.racci.slimjar.task
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import io.github.slimjar.extension.SlimJarExtension
-import io.github.slimjar.extensions.maybePrefix
-import io.github.slimjar.extensions.nullableTargetTask
-import io.github.slimjar.extensions.slimApiConfigurationName
-import io.github.slimjar.extensions.slimConfigurationName
-import io.github.slimjar.extensions.slimJar
-import io.github.slimjar.extensions.targetTask
+import dev.racci.slimjar.extension.SlimJarExtension
+import dev.racci.slimjar.extensions.maybePrefix
+import dev.racci.slimjar.extensions.nullableTargetTask
+import dev.racci.slimjar.extensions.slimApiConfigurationName
+import dev.racci.slimjar.extensions.slimConfigurationName
+import dev.racci.slimjar.extensions.slimJar
+import dev.racci.slimjar.extensions.targetTask
+import io.github.slimjar.task.SlimJarTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.CacheableTask
@@ -37,7 +38,6 @@ public open class SlimJarMultiplatformTask @Inject constructor(
     init {
         group = TASK_GROUP
         inputs.files(slimjarConfigurations)
-//        outputs.files(outputDirectory)
 
         val finalOutputTarget = target.nullableTargetTask("reobfJar") // Paperweight compatibility
             ?: target.nullableTargetTask<ShadowJar>("shadowJar") // Shadow compatibility

@@ -1,4 +1,4 @@
-package io.github.slimjar.extension
+package dev.racci.slimjar.extension
 
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import javax.inject.Inject

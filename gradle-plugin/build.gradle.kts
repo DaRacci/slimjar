@@ -5,6 +5,7 @@ plugins {
     `maven-publish`
     `java-gradle-plugin`
     alias(libs.plugins.shadow)
+    alias(libs.plugins.kotlin.dsl)
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.gradle.publish)
     id(libs.plugins.kotlin.plugin.serialization.get().pluginId)
@@ -65,7 +66,8 @@ tasks {
                 if (
                     !path.startsWith("META-INF") &&
                     path.lastName.endsWith(".class") &&
-                    !path.pathString.startsWith("io.github.slimjar".replace(".", "/"))
+                    !path.pathString.startsWith("io/github/slimjar") &&
+                    !path.pathString.startsWith("dev/racci/slimjar")
                 ) nonInlinedDependencies.add(path.pathString)
             }
 

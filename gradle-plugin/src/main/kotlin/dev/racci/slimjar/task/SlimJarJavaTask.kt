@@ -1,9 +1,10 @@
-package io.github.slimjar.task
+package dev.racci.slimjar.task
 
+import dev.racci.slimjar.extension.SlimJarJavaExtension
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_API_CONFIGURATION_NAME
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_CONFIGURATION_NAME
-import io.github.slimjar.extension.SlimJarJavaExtension
 import io.github.slimjar.targetedJarTask
+import io.github.slimjar.task.SlimJarTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.TaskAction

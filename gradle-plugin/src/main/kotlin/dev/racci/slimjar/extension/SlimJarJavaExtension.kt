@@ -1,4 +1,4 @@
-package io.github.slimjar.extension
+package dev.racci.slimjar.extension
 
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import io.github.slimjar.SlimJarPlugin

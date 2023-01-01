@@ -1,4 +1,4 @@
-package io.github.slimjar.data
+package dev.racci.slimjar.data
 
 import org.gradle.api.Named
 import org.gradle.api.tasks.SourceSet
