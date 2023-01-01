@@ -104,7 +104,7 @@ public record IsolationConfiguration(
         @Contract(mutates = "this")
         @NotNull Collection<String> getModules() {
             if (modules.isEmpty()) {
-                this.modules = Collections.unmodifiableSet(Modules.findLocalModules());
+                this.modules = Modules.findLocalModules();
             }
 
             return modules;
