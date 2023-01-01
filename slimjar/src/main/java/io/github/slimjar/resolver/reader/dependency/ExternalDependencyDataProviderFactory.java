@@ -37,7 +37,7 @@ public final class ExternalDependencyDataProviderFactory implements DependencyDa
 
     @Contract(pure = true)
     public ExternalDependencyDataProviderFactory(@NotNull final GsonFacadeFactory gsonFactory) throws ResolutionException {
-        this.gsonFacade = DependencyDataProviderFactory.fromFactory(gsonFactory);
+        this.gsonFacade = gsonFactory.fromFactory();
     }
 
     @Override

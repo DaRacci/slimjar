@@ -24,9 +24,21 @@
 
 package io.github.slimjar.resolver.reader.facade;
 
+import io.github.slimjar.exceptions.ResolutionException;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 @FunctionalInterface
 public interface GsonFacadeFactory {
+    @Contract("-> new")
     @NotNull GsonFacade createFacade() throws ReflectiveOperationException;
+
+    @Contract("-> new")
+    default @NotNull GsonFacade fromFactory() throws ResolutionException {
+        try {
+            return this.createFacade();
+        } catch (final ReflectiveOperationException err) {
+            throw new ResolutionException("Failed to create GsonFacade", err);
+        }
+    }
 }
