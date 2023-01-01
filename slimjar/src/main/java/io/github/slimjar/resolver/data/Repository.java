@@ -24,7 +24,6 @@
 
 package io.github.slimjar.resolver.data;
 
-import kotlinx.serialization.Serializable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +32,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 
-@Serializable
 public record Repository(@NotNull URL url) {
     @NotNull public static final String CENTRAL_URL = "https://repo1.maven.org/maven2/";
     private static Repository centralInstance;

@@ -24,7 +24,6 @@
 
 package io.github.slimjar.resolver.data;
 
-import kotlinx.serialization.Serializable;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -32,7 +31,6 @@ import org.jetbrains.annotations.Nullable;
 import java.net.URL;
 import java.util.Objects;
 
-@Serializable
 public record Mirror(
     @NotNull URL mirroring,
     @NotNull URL original

@@ -25,14 +25,16 @@
 package io.github.slimjar.task
 
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-import io.github.slimjar.extension.SlimJarExtension
-import io.github.slimjar.extensions.maybePrefix
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.reflect.TypeToken
+import dev.racci.slimjar.extension.SlimJarExtension
+import dev.racci.slimjar.extensions.maybePrefix
 import io.github.slimjar.func.performCompileTimeResolution
 import io.github.slimjar.resolver.CachingDependencyResolver
 import io.github.slimjar.resolver.ResolutionResult
 import io.github.slimjar.resolver.data.Dependency
 import io.github.slimjar.resolver.data.DependencyData
-import io.github.slimjar.resolver.data.Mirror
 import io.github.slimjar.resolver.data.Repository
 import io.github.slimjar.resolver.enquirer.PingingRepositoryEnquirerFactory
 import io.github.slimjar.resolver.mirrors.SimpleMirrorSelector
@@ -54,19 +56,6 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.KSerializer
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.descriptors.buildClassSerialDescriptor
-import kotlinx.serialization.descriptors.element
-import kotlinx.serialization.encoding.CompositeDecoder
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import kotlinx.serialization.encoding.encodeStructure
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.decodeFromStream
-import kotlinx.serialization.json.encodeToStream
 import org.gradle.api.DefaultTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.ResolvableDependencies
@@ -84,11 +73,11 @@ import java.net.URL
 import javax.inject.Inject
 
 @CacheableTask
-@OptIn(ExperimentalSerializationApi::class)
 public abstract class SlimJarTask @Inject constructor(@Transient private val extension: SlimJarExtension) : DefaultTask() {
 
     protected companion object {
         public const val TASK_GROUP: String = "slimJar"
+        public val GSON: Gson = GsonBuilder().setPrettyPrinting().create()
     }
 
     @get:OutputDirectory
@@ -100,9 +89,7 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
     @get:Internal
     public abstract val slimjarConfigurations: SetProperty<Configuration>
 
-    /**
-     * Action to generate the json file inside the jar
-     */
+    /** Action to generate the json file inside the jar */
     @TaskAction
     internal fun createJson() = with(project) {
         val repositories = repositories.getMavenRepos()
@@ -110,7 +97,7 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
 
         with(outputDirectory.resolve("slimjar.json")) {
             val dependencyData = DependencyData(slimJarExtension.mirrors.get(), repositories, dependencies, slimJarExtension.relocations.get())
-            outputStream().use { Json.encodeToStream(dependencyData, it) }
+            writer().use { writer -> GSON.toJson(dependencyData, writer) }
             withShadowTask { from(this) }
         }
     }
@@ -120,8 +107,8 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
         if (!project.performCompileTimeResolution) return@with
 
         val file = outputDirectory.resolve("slimjar-resolutions.json")
-        val preResolved: MutableMap<String, ResolutionResult> = if (file.exists()) {
-            file.inputStream().use(Json::decodeFromStream)
+        val preResolved: Map<String, ResolutionResult> = if (file.exists()) {
+            file.reader().use { reader -> GSON.fromJson(reader, object : TypeToken<Map<String, ResolutionResult>>() {}.type) }
         } else mutableMapOf()
 
         val dependencies = slimjarConfigurations.get().flatMap { it.incoming.getSlimDependencies() }.toMutableSet().flatten()
@@ -197,21 +184,20 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
         preResolved.forEach { results.putIfAbsent(it.key, it.value) }
 
         with(file) {
-            outputStream().use { Json.encodeToStream(results, it) }
+            writer().use { writer -> GSON.toJson(results, writer) }
             withShadowTask { from(this) }
         }
     }
 
     /**
-     * Turns a [RenderableDependency] into a [Dependency] with all its transitives.
+     * Turns a [RenderableDependency] into a [Dependency] with all its
+     * transitives.
      */
     private fun RenderableDependency.toSlimDependency(): Dependency? {
         return id.toString().toDependency(collectTransitive(children))
     }
 
-    /**
-     * Recursively flattens the transitive dependencies.
-     */
+    /** Recursively flattens the transitive dependencies. */
     private fun collectTransitive(
         dependencies: Set<RenderableDependency>
     ): Sequence<Dependency> = sequence { // TODO: Might be better to use a flow here // Might also just not work
@@ -226,7 +212,8 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
 
     /**
      * Creates a [Dependency] based on a string
-     * group:artifact:version:snapshot - The snapshot is the only nullable value.
+     * group:artifact:version:snapshot - The
+     * snapshot is the only nullable value.
      */
     private fun String.toDependency(transitive: Sequence<Dependency>): Dependency? {
         val array = arrayOfNulls<Any>(5)
@@ -265,41 +252,4 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
     protected open fun withShadowTask(
         action: ShadowJar.() -> Unit
     ): ShadowJar? = (project.tasks.findByName(maybePrefix(null, null, "shadowJar")) as? ShadowJar)?.apply(action)
-
-//    private object DependencyDataSerializer : KSerializer<DependencyData> {
-//        override val descriptor: SerialDescriptor = buildClassSerialDescriptor("DependencyData") {
-//            element<List<Mirror>>("mirrors")
-//            element<List<Repository>>("repositories")
-//            element<List<Dependency>>("dependencies")
-//        }
-//
-//        override fun deserialize(decoder: Decoder): DependencyData {
-//            val input = decoder.beginStructure(descriptor)
-//            var mirrors: List<Mirror>? = null
-//            var repositories: List<Repository>? = null
-//            var dependencies: List<Dependency>? = null
-//            while (true) {
-//                when (val index = input.decodeElementIndex(descriptor)) {
-//                    CompositeDecoder.DECODE_DONE -> break
-//                    0 -> mirrors = input.decodeSerializableElement(descriptor, index, ListSerializer(MirrorSerializer))
-//                    1 -> repositories = input.decodeSerializableElement(descriptor, index, ListSerializer(RepositorySerializer))
-//                    2 -> dependencies = input.decodeSerializableElement(descriptor, index, ListSerializer(DependencySerializer))
-//                    else -> error("Unexpected index: $index")
-//                }
-//            }
-//            input.endStructure(descriptor)
-//            return DependencyData(mirrors!!, repositories!!, dependencies!!, emptyList())
-//        }
-//
-//        override fun serialize(
-//            encoder: Encoder,
-//            value: DependencyData
-//        ) {
-//            encoder.encodeStructure(descriptor) {
-//                encodeSerializableElement(descriptor, 0, ListSerializer(Mirror.serializer()), value.mirrors())
-//                encodeSerializableElement(descriptor, 1, ListSerializer(Repository.serializer()), value.repositories())
-//                encodeSerializableElement(descriptor, 2, ListSerializer(Dependency.serializer()), value.dependencies())
-//            }
-//        }
-//    }
 }

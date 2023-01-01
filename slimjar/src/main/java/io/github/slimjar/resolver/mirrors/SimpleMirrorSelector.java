@@ -29,7 +29,6 @@ import io.github.slimjar.resolver.data.Repository;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.net.URL;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
