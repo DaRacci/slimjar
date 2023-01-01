@@ -54,7 +54,7 @@ tasks {
         doLast {
             val nonInlinedDependencies = mutableListOf<String>()
             zipTree(shadowJar.flatMap { it.archiveFile }).visit {
-                if (!isDirectory) return@visit
+                if (isDirectory) return@visit
 
                 val path = relativePath
                 if (
