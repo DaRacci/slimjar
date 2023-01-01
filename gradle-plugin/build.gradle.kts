@@ -1,6 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ConfigureShadowRelocation
-import org.jetbrains.kotlin.util.prefixIfNot
-
 plugins {
     `maven-publish`
     `java-gradle-plugin`
@@ -8,7 +5,6 @@ plugins {
     alias(libs.plugins.kotlin.dsl)
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.gradle.publish)
-    id(libs.plugins.kotlin.plugin.serialization.get().pluginId)
 }
 
 repositories {
@@ -25,11 +21,10 @@ configurations {
 
 @Suppress("UnstableApiUsage")
 dependencies {
-    shadowImplementation(libs.kotlin.stdlib)
     shadowImplementation(project(":slimjar"))
+    shadowImplementation("com.google.code.gson:gson:2.10")
     shadowImplementation(libs.arrow.core)
     shadowImplementation(libs.kotlinx.coroutines)
-    shadowImplementation(libs.kotlinx.serialization.json)
     shadowImplementation(libs.kotlinx.immutableCollections)
 
     compileAndTest(gradleApi())
@@ -38,7 +33,6 @@ dependencies {
     compileAndTest(libs.gradle.minecraft.paperweight)
     compileAndTest(libs.gradle.kotlin.jvm)
     compileAndTest(libs.gradle.kotlin.mpp)
-    compileAndTest(libs.gradle.kotlin.dsl)
 
     testImplementation("org.assertj:assertj-core:3.23.1")
     testImplementation(gradleTestKit())
@@ -54,7 +48,7 @@ dependencies {
 tasks {
     val ensureDependenciesAreInlined by registering {
         description = "Ensures all declared dependencies are inlined into shadowed jar"
-        group = HelpTasksPlugin.HELP_GROUP
+        group = "verification"
         dependsOn(shadowJar)
 
         doLast {
@@ -76,10 +70,6 @@ tasks {
         }
     }
 
-    val relocateShadowJar by registering(ConfigureShadowRelocation::class) {
-        target = shadowJar.get()
-    }
-
     // Disabling default jar task as it is overridden by shadowJar
     jar { enabled = false }
 
@@ -88,18 +78,22 @@ tasks {
     check { dependsOn(ensureDependenciesAreInlined, validatePlugins) }
 
     shadowJar {
-        dependsOn(relocateShadowJar)
         archiveClassifier.set("")
         configurations = listOf(shadowImplementation)
 
-        mapOf(
-            "io.github.slimjar" to null,
-            "me.lucko.jarrelocator" to "jarrelocator",
-            "com.google.gson" to "gson",
-            "kotlin" to "kotlin",
-            "org.intellij" to "intellij",
-//            "org.jetbrains" to "jetbrains"
-        ).forEach { relocate(it.key, "io.github.slimjar${it.value?.prefixIfNot(".") ?: ""}") }
+        exclude("kotlin/**")
+
+        listOf(
+            "me.lucko.jarrelocator",
+            "com.google.gson",
+            "arrow",
+            "kotlinx",
+            "org.intellij",
+            "org.jetbrains.annotations",
+            "org.codehaus.mojo.animal_sniffer"
+        ).map { it to it.split('.').last() }.forEach { (original, last) ->
+            relocate(original, "dev.racci.slimjar.libs.$last")
+        }
     }
 
     whenTaskAdded {
