@@ -28,6 +28,7 @@ import arrow.core.Option
 import arrow.core.getOrElse
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import dev.racci.minix.gradle.ex.recursiveSubprojects
 import dev.racci.slimjar.data.Targetable
 import dev.racci.slimjar.extension.SlimJarExtension
 import dev.racci.slimjar.extension.SlimJarJavaExtension
@@ -58,8 +59,11 @@ import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
+import org.slf4j.LoggerFactory
 
 public class SlimJarPlugin : Plugin<Project> {
+    private val slimLogger = LoggerFactory.getLogger("SlimJar")
+
     public companion object {
         public val SLIM_CONFIGURATION_NAME: Targetable = Targetable("slim")
         public val SLIM_API_CONFIGURATION_NAME: Targetable = Targetable("slimApi")
@@ -82,10 +86,10 @@ public class SlimJarPlugin : Plugin<Project> {
 
     private fun configureForJava(project: Project) = with(project) {
         if (parent != null) {
-            logger.info("Not configuring ${project.name} as root project because it has a parent.")
+            slimLogger.info("Not configuring ${project.name} as root project because it has a parent.")
             return@with false
         }
-        logger.info("Configuring ${project.name} as root project.")
+        slimLogger.info("Configuring ${project.name} as root project.")
 
         // Applies Java if not present, since it's required for the compileOnly configuration.
         plugins.apply(JavaPlugin::class)
@@ -104,21 +108,40 @@ public class SlimJarPlugin : Plugin<Project> {
 
         createTask<SlimJarJavaTask>(null, extensions.create<SlimJarJavaExtension>(SLIM_EXTENSION_NAME.get()))
 
+        val slimJarConfigurations = mutableListOf<Configuration>()
+        recursiveSubprojects(true).forEach { sub ->
+            // Applies Java if not present, since it's required for the compileOnly configuration.
+            sub.plugins.apply(JavaPlugin::class)
+            sub.createConfig(SLIM_CONFIGURATION_NAME.get()) {
+                sub.configurations[JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME].extendsFrom(this)
+                sub.configurations[JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME].extendsFrom(this)
+                slimJarConfigurations += this
+            }
+
+            // Configures the slimApi configuration if JavaLibraryPlugin is present
+            sub.plugins.withType<JavaLibraryPlugin> {
+                sub.createConfig(SLIM_API_CONFIGURATION_NAME.get()) {
+                    sub.configurations[JavaPlugin.COMPILE_ONLY_API_CONFIGURATION_NAME].extendsFrom(this)
+                    sub.configurations[JavaPlugin.TEST_IMPLEMENTATION_CONFIGURATION_NAME].extendsFrom(this)
+                    slimJarConfigurations += this
+                }
+            }
+        }
+
         true
     }
 
     private fun configureForMPP(project: Project): Boolean = with(project) {
         if (!plugins.hasPlugin(KotlinMultiplatformPluginWrapper::class)) {
-//        if (!plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
-            logger.info("Not configuring ${project.name} as MPP project because it does not have the Kotlin Multiplatform plugin.")
+            slimLogger.info("Not configuring ${project.name} as MPP project because it does not have the Kotlin Multiplatform plugin.")
             return@with false
         }
-        logger.info("Configuring ${project.name} for Kotlin Multiplatform.")
+        slimLogger.info("Configuring ${project.name} for Kotlin Multiplatform.")
 
         val mppExt = (kotlinExtension as KotlinMultiplatformExtension)
         // TODO: Support test targets as well.
         mppExt.sourceSets.all {
-            logger.info("Configuring sourceSet $name for Kotlin Multiplatform.")
+            slimLogger.info("Configuring sourceSet $name for Kotlin Multiplatform.")
 
             createConfig(SLIM_CONFIGURATION_NAME.forSourceSet(this)) { configurations[compileOnlyConfigurationName].extendsFrom(this) }
             createConfig(SLIM_API_CONFIGURATION_NAME.forSourceSet(this)) { configurations[apiConfigurationName].extendsFrom(this) }
@@ -126,10 +149,10 @@ public class SlimJarPlugin : Plugin<Project> {
 
         mppExt.targets.all {
             if (platformType != KotlinPlatformType.jvm) {
-                logger.info("Not configuring target $name for Kotlin Multiplatform because it is not a JVM target.")
+                slimLogger.info("Not configuring target $name for Kotlin Multiplatform because it is not a JVM target.")
                 return@all
             }
-            logger.info("Configuring target $name for Kotlin Multiplatform.")
+            slimLogger.info("Configuring target $name for Kotlin Multiplatform.")
 
             compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
                 listOf(configurations[set.slimConfigurationName], configurations[set.slimApiConfigurationName])
