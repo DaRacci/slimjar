@@ -8,6 +8,7 @@ plugins {
 }
 
 repositories {
+    mavenLocal()
     maven("https://plugins.gradle.org/m2/")
     maven("https://repo.papermc.io/repository/maven-public/")
 }
@@ -26,6 +27,7 @@ dependencies {
     shadowImplementation(libs.arrow.core)
     shadowImplementation(libs.kotlinx.coroutines)
     shadowImplementation(libs.kotlinx.immutableCollections)
+    shadowImplementation("dev.racci.minix:dev.racci.minix.gradle.plugin:0.2.2")
 
     compileAndTest(gradleApi())
     compileAndTest(gradleKotlinDsl())

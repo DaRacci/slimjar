@@ -165,27 +165,44 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
 
     /** Recursively flattens the transitive dependencies. */
     private fun collectTransitive(
-        dependencies: Set<RenderableDependency>
-    ): Sequence<Dependency> = sequence { // TODO: Might be better to use a flow here // Might also just not work
-        dependencies.forEach { renderable ->
-            val dependency = renderable.id.toString().toDependency(emptySequence()) ?: return@forEach
-            yield(dependency)
-            yieldAll(collectTransitive(renderable.children))
+        dependencies: Collection<RenderableDependency>,
+        transitive: MutableSet<Dependency> = mutableSetOf(),
+    ): Set<Dependency> {
+        for (dependency in dependencies) {
+            val dep = dependency.id.toString().toDependency(emptyList()) ?: continue
+            if (dep in transitive) continue
+
+            transitive.add(dep)
+            collectTransitive(dependency.children, transitive)
         }
-    }.distinct()
+
+        return transitive
+    }
+
+//    private fun collectTransitive(
+//        dependencies: Collection<RenderableDependency>
+//    ): Sequence<Dependency> = sequence {
+//        for (dependency in dependencies) {
+//            val dep = dependency.id.toString().toDependency(emptySequence()) ?: continue
+//            yield(dep)
+//            yieldAll(collectTransitive(dependency.children))
+//        }
+//    }
 
     /**
      * Creates a [Dependency] based on a string
      * group:artifact:version:snapshot - The
      * snapshot is the only nullable value.
      */
-    private fun String.toDependency(transitive: Sequence<Dependency>): Dependency? {
+    private fun String.toDependency(transitive: Collection<Dependency>): Dependency? {
         val array = arrayOfNulls<Any>(5)
-        array[4] = transitive
+        array[4] = transitive.toList()
 
         split(":").takeIf { it.size >= 3 }?.forEachIndexed { index, s ->
             array[index] = s
         } ?: return null
+
+        println("Creating dependency from ${array.joinToString(", ") { "$it (${it?.javaClass})" }}")
 
         return Dependency::class.java.constructors.first().newInstance(*array) as Dependency
     }
