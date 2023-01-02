@@ -3,16 +3,13 @@ package dev.racci.slimjar.task
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import dev.racci.slimjar.extension.SlimJarExtension
 import dev.racci.slimjar.extensions.maybePrefix
-import dev.racci.slimjar.extensions.nullableTargetTask
 import dev.racci.slimjar.extensions.slimApiConfigurationName
 import dev.racci.slimjar.extensions.slimConfigurationName
 import dev.racci.slimjar.extensions.slimJar
-import dev.racci.slimjar.extensions.targetTask
 import io.github.slimjar.task.SlimJarTask
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.SetProperty
 import org.gradle.api.tasks.CacheableTask
-import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.setProperty
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
@@ -26,7 +23,8 @@ public open class SlimJarMultiplatformTask @Inject constructor(
 ) : SlimJarTask() {
     final override val outputDirectory: File = project.buildDir.resolve("generated/slimjar/${target.name}").also(File::mkdirs)
 
-    @Transient final override val slimJarExtension: SlimJarExtension = target.slimJar
+    @Transient
+    final override val slimJarExtension: SlimJarExtension = target.slimJar
 
     @Transient
     final override val slimjarConfigurations: SetProperty<Configuration> = project.objects.setProperty<Configuration>().convention(
@@ -38,12 +36,10 @@ public open class SlimJarMultiplatformTask @Inject constructor(
     init {
         group = TASK_GROUP
         inputs.files(slimjarConfigurations)
-
-        val finalOutputTarget = target.nullableTargetTask("reobfJar") // Paperweight compatibility
-            ?: target.nullableTargetTask<ShadowJar>("shadowJar") // Shadow compatibility
-            ?: target.targetTask<Jar>("jar") // Fall back to default jar task
-
-        dependsOn(finalOutputTarget)
+        outputs.dir(outputDirectory)
+        target.compilations[KotlinCompilation.MAIN_COMPILATION_NAME].defaultSourceSet {
+            resources.srcDir(outputDirectory)
+        }
     }
 
     override fun withShadowTask(

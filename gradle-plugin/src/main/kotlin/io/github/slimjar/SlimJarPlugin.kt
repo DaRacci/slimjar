@@ -76,10 +76,7 @@ public class SlimJarPlugin : Plugin<Project> {
             throw ShadowNotFoundException("SlimJar depends on the Shadow plugin, please apply the plugin. For more information visit: https://imperceptiblethoughts.com/shadow/")
         }
 
-        val mpp = configureForMPP(project)
-        val java = configureForJava(project)
-
-        if (mpp || java) return@with
+        if (configureForMPP(project) || configureForJava(project)) return@with
 
         error("SlimJar can only be applied to a Kotlin Multiplatform Project or a root project.")
     }
