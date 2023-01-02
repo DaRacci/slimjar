@@ -4,14 +4,16 @@ import org.gradle.api.Action
 import org.gradle.api.artifacts.Dependency
 import org.gradle.api.artifacts.ExternalModuleDependency
 import org.gradle.api.artifacts.ModuleDependency
+import org.gradle.api.capabilities.Capability
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderConvertible
 import org.gradle.kotlin.dsl.accessors.runtime.addConfiguredDependencyTo
-import org.gradle.kotlin.dsl.accessors.runtime.addDependencyTo
 import org.gradle.kotlin.dsl.accessors.runtime.addExternalModuleDependencyTo
 import org.jetbrains.kotlin.gradle.plugin.KotlinDependencyHandler
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.mpp.DefaultKotlinDependencyHandler
+import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.GradleKpmModule
+import kotlin.reflect.full.primaryConstructor
 
 /**
  * Adds a dependency to the 'slim' configuration.
@@ -19,7 +21,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.DefaultKotlinDependencyHandler
  * @param dependencyNotation notation for the dependency to be added.
  * @return The dependency.
  */
-public fun KotlinDependencyHandler.slim(dependencyNotation: Any): Dependency = addDependencyTo(project.dependencies, sourceSet.slimConfigurationName, dependencyNotation) { }
+public fun KotlinDependencyHandler.slim(dependencyNotation: Any): Dependency? = addDependencyByAnyNotation(sourceSet.slimConfigurationName, dependencyNotation)
 
 /**
  * Adds a dependency to the 'slim' configuration.
@@ -31,8 +33,8 @@ public fun KotlinDependencyHandler.slim(dependencyNotation: Any): Dependency = a
  */
 public fun KotlinDependencyHandler.slim(
     dependencyNotation: String,
-    dependencyConfiguration: Action<ExternalModuleDependency>
-): ExternalModuleDependency = addDependencyTo(project.dependencies, sourceSet.slimConfigurationName, dependencyNotation, dependencyConfiguration)
+    dependencyConfiguration: ExternalModuleDependency.() -> Unit
+): ExternalModuleDependency = addDependencyByStringNotation(sourceSet.slimConfigurationName, dependencyNotation, dependencyConfiguration)
 
 /**
  * Adds a dependency to the 'slim' configuration.
@@ -44,14 +46,15 @@ public fun KotlinDependencyHandler.slim(
  */
 public fun KotlinDependencyHandler.slim(
     dependencyNotation: Provider<*>,
-    dependencyConfiguration: Action<ExternalModuleDependency>
+    dependencyConfiguration: ExternalModuleDependency.() -> Unit
 ): Unit = addConfiguredDependencyTo(project.dependencies, sourceSet.slimConfigurationName, dependencyNotation, dependencyConfiguration)
 
 /**
  * Adds a dependency to the 'slim' configuration.
  *
  * @param dependencyNotation notation for the dependency to be added.
- * @param dependencyConfiguration expression to use to configure the dependency.
+ * @param dependencyConfiguration expression to use to configure the
+ *     dependency.
  * @return The dependency.
  */
 public fun KotlinDependencyHandler.slim(
@@ -64,11 +67,16 @@ public fun KotlinDependencyHandler.slim(
  *
  * @param group the group of the module to be added as a dependency.
  * @param name the name of the module to be added as a dependency.
- * @param version the optional version of the module to be added as a dependency.
- * @param configuration the optional configuration of the module to be added as a dependency.
- * @param classifier the optional classifier of the module artifact to be added as a dependency.
- * @param ext the optional extension of the module artifact to be added as a dependency.
- * @param dependencyConfiguration expression to use to configure the dependency.
+ * @param version the optional version of the module to be added as a
+ *     dependency.
+ * @param configuration the optional configuration of the module to be
+ *     added as a dependency.
+ * @param classifier the optional classifier of the module artifact to be
+ *     added as a dependency.
+ * @param ext the optional extension of the module artifact to be added as
+ *     a dependency.
+ * @param dependencyConfiguration expression to use to configure the
+ *     dependency.
  * @return The dependency.
  */
 public fun KotlinDependencyHandler.slim(
@@ -85,13 +93,14 @@ public fun KotlinDependencyHandler.slim(
  * Adds a dependency to the 'slim' configuration.
  *
  * @param dependency dependency to be added.
- * @param dependencyConfiguration expression to use to configure the dependency.
+ * @param dependencyConfiguration expression to use to configure the
+ *     dependency.
  * @return The dependency.
  */
 public fun <T : ModuleDependency> KotlinDependencyHandler.slim(
     dependency: T,
     dependencyConfiguration: T.() -> Unit
-): T = addDependencyTo(project.dependencies, sourceSet.slimConfigurationName, dependency, dependencyConfiguration)
+): T = addDependency(sourceSet.slimConfigurationName, dependency, dependencyConfiguration)
 
 /**
  * Adds a dependency to the 'slimApi' configuration.
@@ -99,7 +108,7 @@ public fun <T : ModuleDependency> KotlinDependencyHandler.slim(
  * @param dependencyNotation notation for the dependency to be added.
  * @return The dependency.
  */
-public fun KotlinDependencyHandler.slimApi(dependencyNotation: Any): Dependency = addDependencyTo(project.dependencies, sourceSet.slimApiConfigurationName, dependencyNotation) { }
+public fun KotlinDependencyHandler.slimApi(dependencyNotation: Any): Dependency? = addDependencyByAnyNotation(sourceSet.slimApiConfigurationName, dependencyNotation)
 
 /**
  * Adds a dependency to the 'slimApi' configuration.
@@ -111,8 +120,8 @@ public fun KotlinDependencyHandler.slimApi(dependencyNotation: Any): Dependency 
  */
 public fun KotlinDependencyHandler.slimApi(
     dependencyNotation: String,
-    dependencyConfiguration: Action<ExternalModuleDependency>
-): ExternalModuleDependency = addDependencyTo(project.dependencies, sourceSet.slimApiConfigurationName, dependencyNotation, dependencyConfiguration)
+    dependencyConfiguration: ExternalModuleDependency.() -> Unit
+): ExternalModuleDependency = addDependencyByStringNotation(sourceSet.slimApiConfigurationName, dependencyNotation, dependencyConfiguration)
 
 /**
  * Adds a dependency to the 'slimApi' configuration.
@@ -124,14 +133,15 @@ public fun KotlinDependencyHandler.slimApi(
  */
 public fun KotlinDependencyHandler.slimApi(
     dependencyNotation: Provider<*>,
-    dependencyConfiguration: Action<ExternalModuleDependency>
+    dependencyConfiguration: ExternalModuleDependency.() -> Unit
 ): Unit = addConfiguredDependencyTo(project.dependencies, sourceSet.slimApiConfigurationName, dependencyNotation, dependencyConfiguration)
 
 /**
  * Adds a dependency to the 'slimApi' configuration.
  *
  * @param dependencyNotation notation for the dependency to be added.
- * @param dependencyConfiguration expression to use to configure the dependency.
+ * @param dependencyConfiguration expression to use to configure the
+ *     dependency.
  * @return The dependency.
  */
 public fun KotlinDependencyHandler.slimApi(
@@ -144,11 +154,16 @@ public fun KotlinDependencyHandler.slimApi(
  *
  * @param group the group of the module to be added as a dependency.
  * @param name the name of the module to be added as a dependency.
- * @param version the optional version of the module to be added as a dependency.
- * @param configuration the optional configuration of the module to be added as a dependency.
- * @param classifier the optional classifier of the module artifact to be added as a dependency.
- * @param ext the optional extension of the module artifact to be added as a dependency.
- * @param dependencyConfiguration expression to use to configure the dependency.
+ * @param version the optional version of the module to be added as a
+ *     dependency.
+ * @param configuration the optional configuration of the module to be
+ *     added as a dependency.
+ * @param classifier the optional classifier of the module artifact to be
+ *     added as a dependency.
+ * @param ext the optional extension of the module artifact to be added as
+ *     a dependency.
+ * @param dependencyConfiguration expression to use to configure the
+ *     dependency.
  * @return The dependency.
  */
 public fun KotlinDependencyHandler.slimApi(
@@ -165,13 +180,54 @@ public fun KotlinDependencyHandler.slimApi(
  * Adds a dependency to the 'slimApi' configuration.
  *
  * @param dependency dependency to be added.
- * @param dependencyConfiguration expression to use to configure the dependency.
+ * @param dependencyConfiguration expression to use to configure the
+ *     dependency.
  * @return The dependency.
  */
 public fun <T : ModuleDependency> KotlinDependencyHandler.slimApi(
     dependency: T,
     dependencyConfiguration: T.() -> Unit
-): T = addDependencyTo(project.dependencies, sourceSet.slimApiConfigurationName, dependency, dependencyConfiguration)
+): T = addDependency(sourceSet.slimApiConfigurationName, dependency, dependencyConfiguration)
+
+private fun KotlinDependencyHandler.addDependencyByAnyNotation(
+    configurationName: String,
+    dependencyNotation: Any
+): Dependency? {
+    val dependency = when (dependencyNotation) {
+        is GradleKpmModule -> project.dependencies.create(dependencyNotation.project).apply {
+            (this as ModuleDependency).capabilities {
+                if (dependencyNotation.moduleClassifier != null) {
+                    val capability = Class.forName("org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util").kotlin.primaryConstructor!!.call(
+                        project.provider { project.group.toString() },
+                        project.name,
+                        project.provider { project.version.toString() },
+                        dependencyNotation.moduleClassifier
+                    ) as Capability
+                    requireCapability(capability)
+                }
+            }
+        }
+
+        else -> dependencyNotation
+    }
+
+    return project.dependencies.add(configurationName, dependency)
+}
+
+private fun KotlinDependencyHandler.addDependencyByStringNotation(
+    configurationName: String,
+    dependencyNotation: Any,
+    configure: ExternalModuleDependency.() -> Unit = { }
+): ExternalModuleDependency = addDependency(configurationName, project.dependencies.create(dependencyNotation) as ExternalModuleDependency, configure)
+
+private fun <T : Dependency> KotlinDependencyHandler.addDependency(
+    configurationName: String,
+    dependency: T,
+    configure: T.() -> Unit
+): T = dependency.also {
+    configure(it)
+    project.dependencies.add(configurationName, it)
+}
 
 private val KotlinDependencyHandler.sourceSet: KotlinSourceSet
     get() = (this as DefaultKotlinDependencyHandler).parent as KotlinSourceSet
