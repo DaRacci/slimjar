@@ -14,7 +14,7 @@ pluginManagement {
     }
 
     plugins {
-        kotlin("plugin.sam.with.receiver") version "1.7.22"
+        kotlin("plugin.sam.with.receiver") version "1.8.0"
     }
 }
 
