@@ -129,7 +129,7 @@ public class SlimJarPlugin : Plugin<Project> {
     }
 
     private fun configureForMPP(project: Project): Boolean = with(project) {
-        if (!plugins.hasPlugin(KotlinMultiplatformPluginWrapper::class)) {
+        if (!plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
             slimLogger.info("Not configuring ${project.name} as MPP project because it does not have the Kotlin Multiplatform plugin.")
             return@with false
         }
