@@ -27,7 +27,7 @@ dependencies {
     shadowImplementation(libs.arrow.core)
     shadowImplementation(libs.kotlinx.coroutines)
     shadowImplementation(libs.kotlinx.immutableCollections)
-    shadowImplementation("dev.racci.minix:dev.racci.minix.gradle.plugin:0.2.2")
+    shadowImplementation("dev.racci.minix:dev.racci.minix.gradle.plugin:0.3.1")
 
     compileAndTest(gradleApi())
     compileAndTest(gradleKotlinDsl())
