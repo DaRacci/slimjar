@@ -36,7 +36,7 @@ dependencies {
     compileAndTest(libs.gradle.kotlin.jvm)
     compileAndTest(libs.gradle.kotlin.mpp)
 
-    testImplementation("org.assertj:assertj-core:3.23.1")
+    testImplementation("org.assertj:assertj-core:3.24.1")
     testImplementation(gradleTestKit())
 
     // For grade log4j checker.
