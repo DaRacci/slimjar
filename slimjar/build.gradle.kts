@@ -8,7 +8,7 @@ dependencies {
     compileOnly("org.jetbrains:annotations:23.1.0")
 
     testImplementation("org.jetbrains:annotations:23.1.0")
-    testImplementation("me.lucko:jar-relocator:1.5")
+    testImplementation("me.lucko:jar-relocator:1.6")
     testImplementation("com.google.code.gson:gson:2.10")
     testImplementation("org.mockito:mockito-core:4.10.0")
     testImplementation("org.mockito:mockito-inline:4.10.0")
