@@ -12,7 +12,7 @@ jobs:
   build-lib:
     name: Build SlimJar Library
     runs-on: ubuntu-latest
-    depends-on: validate
+    needs: validate
     steps:
       - uses: actions/checkout@v3
 
@@ -27,7 +27,7 @@ jobs:
   build-plugin:
     name: Build SlimJar Gradle Plugin
     runs-on: ubuntu-latest
-    depends-on: [build-lib validate]
+    needs: build-lib
     steps:
       - uses: actions/checkout@v3
 
@@ -43,7 +43,7 @@ jobs:
   check:
     name: Run checks and tests
     runs-on: ubuntu-latest
-    depends-on: [build-lib build-plugin validate]
+    needs: build-plugin
     steps:
       - uses: actions/checkout@v3
 
