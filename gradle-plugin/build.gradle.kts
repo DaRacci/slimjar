@@ -2,7 +2,6 @@ plugins {
     `maven-publish`
     `java-gradle-plugin`
     alias(libs.plugins.shadow)
-    alias(libs.plugins.kotlin.dsl)
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.gradle.publish)
 }

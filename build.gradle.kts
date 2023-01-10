@@ -1,10 +1,14 @@
 import com.hierynomus.gradle.license.LicenseBasePlugin
 
 plugins {
+    alias(libs.plugins.minix)
     alias(libs.plugins.kotlin.jvm)
-    id("dev.racci.minix") version "0.1.13"
-    alias(libs.plugins.minix.publication)
     alias(libs.plugins.gradle.license)
+}
+
+minix.publishing {
+    create("gradle-plugin")
+    create("slimjar")
 }
 
 subprojects {

@@ -6,15 +6,14 @@ include("slimjar", "gradle-plugin", "loader-agent")
 
 pluginManagement {
     repositories {
-        mavenLocal { mavenContent { snapshotsOnly() } }
         mavenCentral()
         gradlePluginPortal()
         maven("https://papermc.io/repo/repository/maven-public/")
-        maven("https://repo.racci.dev/releases") { mavenContent { releasesOnly() } }
     }
 
     plugins {
-        kotlin("plugin.sam.with.receiver") version "1.7.22"
+        val kotlinVersion: String by settings
+        kotlin("plugin.sam.with.receiver") version kotlinVersion
     }
 }
 
@@ -23,7 +22,12 @@ dependencyResolutionManagement {
     repositories {
         mavenCentral()
         gradlePluginPortal()
-        maven("https://repo.racci.dev/releases") { mavenContent { releasesOnly() } }
+        maven("https://repo.racci.dev/releases") {
+            mavenContent {
+                releasesOnly()
+                includeModule("dev.racci", "catalog")
+            }
+        }
     }
 
     versionCatalogs.create("libs") {
