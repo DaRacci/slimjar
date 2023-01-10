@@ -164,7 +164,7 @@ public class SlimJarPlugin : Plugin<Project> {
                 SLIM_EXTENSION_NAME.forTarget(target),
                 this
             )
-            createTask<SlimJarMultiplatformTask>(target, slimJarExt, this)
+            createTask<SlimJarMultiplatformTask>(target, slimJarExt, target)
         }
 
         true
