@@ -8,8 +8,7 @@ plugins {
 }
 
 repositories {
-    mavenLocal()
-    maven("https://plugins.gradle.org/m2/")
+    gradlePluginPortal()
     maven("https://repo.papermc.io/repository/maven-public/")
 }
 
@@ -25,7 +24,6 @@ dependencies {
     shadowImplementation(project(":slimjar"))
     shadowImplementation("com.google.code.gson:gson:2.10")
     shadowImplementation(libs.kotlinx.coroutines)
-    shadowImplementation("dev.racci.minix:dev.racci.minix.gradle.plugin:${libs.versions.minix.plugin.get()}")
 
     compileAndTest(gradleApi())
     compileAndTest(gradleKotlinDsl())
@@ -33,6 +31,7 @@ dependencies {
     compileAndTest(libs.gradle.minecraft.paperweight)
     compileAndTest(libs.gradle.kotlin.jvm)
     compileAndTest(libs.gradle.kotlin.mpp)
+    compileAndTest("dev.racci.minix:dev.racci.minix.gradle.plugin:${libs.versions.minix.plugin.get()}")
 
     testImplementation("org.assertj:assertj-core:3.23.1")
     testImplementation(gradleTestKit())
