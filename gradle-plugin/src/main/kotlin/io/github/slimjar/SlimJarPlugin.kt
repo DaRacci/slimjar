@@ -162,7 +162,7 @@ public class SlimJarPlugin : Plugin<Project> {
 
             val slimJarExt = extensions.create<SlimJarMultiplatformExtension>(
                 SLIM_EXTENSION_NAME.forTarget(target),
-                this
+                target
             )
             createTask<SlimJarMultiplatformTask>(target, slimJarExt, target)
         }
