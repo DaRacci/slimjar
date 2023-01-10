@@ -5,6 +5,7 @@ import org.gradle.api.tasks.SourceSet
 import org.gradle.configurationcache.extensions.capitalized
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import kotlin.jvm.JvmInline
 
 @JvmInline
 public value class Targetable(private val mainString: String) {
@@ -16,7 +17,9 @@ public value class Targetable(private val mainString: String) {
             string: String
         ): String = if (named == null || named == (mainName ?: "")) {
             string
-        } else prefixed(named, string)
+        } else {
+            prefixed(named, string)
+        }
 
         @PublishedApi
         internal fun prefixable(

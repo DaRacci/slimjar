@@ -12,9 +12,12 @@ import javax.inject.Inject
 public abstract class SlimJarMultiplatformExtension @Inject constructor(
     target: KotlinTarget
 ) : SlimJarExtension() {
-    final override val relocations: SetProperty<RelocationRule> = target.project.objects.setProperty()
+    final override val relocations: SetProperty<RelocationRule> = target.project.objects
+        .setProperty()
 
-    final override val mirrors: SetProperty<Mirror> = target.project.objects.setProperty()
+    final override val mirrors: SetProperty<Mirror> = target.project.objects
+        .setProperty()
 
-    final override val compileTimeResolution: Property<Boolean> = target.project.objects.property<Boolean>().convention(true)
+    final override val compileTimeResolution: Property<Boolean> = target.project.objects
+        .property<Boolean>().convention(true)
 }

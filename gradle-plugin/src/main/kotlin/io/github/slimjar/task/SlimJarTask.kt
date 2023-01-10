@@ -96,7 +96,12 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
         val dependencies = slimjarConfigurations.get().flatMap { it.incoming.getSlimDependencies() }
 
         with(outputDirectory.resolve("slimjar.json")) {
-            val dependencyData = DependencyData(slimJarExtension.mirrors.get(), repositories, dependencies, slimJarExtension.relocations.get())
+            val dependencyData = DependencyData(
+                slimJarExtension.mirrors.get(),
+                repositories,
+                dependencies,
+                slimJarExtension.relocations.get()
+            )
             writer().use { writer -> GSON.toJson(dependencyData, writer) }
             withShadowTask { from(this) }
         }
@@ -108,10 +113,19 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
 
         val file = outputDirectory.resolve("slimjar-resolutions.json")
         val preResolved: Map<String, ResolutionResult> = if (file.exists()) {
-            file.reader().use { reader -> GSON.fromJson(reader, object : TypeToken<Map<String, ResolutionResult>>() {}.type) }
-        } else mutableMapOf()
+            file.reader().use { reader ->
+                GSON.fromJson(
+                    reader,
+                    object : TypeToken<Map<String, ResolutionResult>>() {}.type
+                )
+            }
+        } else {
+            mutableMapOf()
+        }
 
-        val dependencies = slimjarConfigurations.get().flatMap { it.incoming.getSlimDependencies() }.toMutableSet().flatten()
+        val dependencies = slimjarConfigurations.get()
+            .flatMap { it.incoming.getSlimDependencies() }
+            .toMutableSet().flatten()
         val repositories = repositories.getMavenRepos()
 
         val releaseStrategy = MavenPathResolutionStrategy()
@@ -212,7 +226,9 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
         .toSet()
         .map { Repository(it.url.toURL()) }
 
-    private fun ResolvableDependencies.getSlimDependencies(): List<Dependency> = RenderableModuleResult(this.resolutionResult.root)
+    private fun ResolvableDependencies.getSlimDependencies(): List<Dependency> = RenderableModuleResult(
+        this.resolutionResult.root
+    )
         .children.mapNotNull { it.toSlimDependency() }
 
     private fun Collection<Dependency>.flatten(): MutableSet<Dependency> {

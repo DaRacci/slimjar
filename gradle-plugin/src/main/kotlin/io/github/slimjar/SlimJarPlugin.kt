@@ -24,8 +24,6 @@
 
 package io.github.slimjar
 
-import arrow.core.Option
-import arrow.core.getOrElse
 import com.github.jengelman.gradle.plugins.shadow.ShadowPlugin
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 import dev.racci.minix.gradle.ex.recursiveSubprojects
@@ -57,7 +55,6 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
-import org.jetbrains.kotlin.gradle.plugin.KotlinMultiplatformPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType
 import org.slf4j.LoggerFactory
 
@@ -73,7 +70,9 @@ public class SlimJarPlugin : Plugin<Project> {
 
     override fun apply(project: Project): Unit = with(project) {
         if (!plugins.hasPlugin(ShadowPlugin::class)) {
-            throw ShadowNotFoundException("SlimJar depends on the Shadow plugin, please apply the plugin. For more information visit: https://imperceptiblethoughts.com/shadow/")
+            throw ShadowNotFoundException(
+                "SlimJar depends on the Shadow plugin, please apply the plugin. For more information visit: https://imperceptiblethoughts.com/shadow/"
+            )
         }
 
         if (configureForMPP(project) || configureForJava(project)) return@with
@@ -130,33 +129,42 @@ public class SlimJarPlugin : Plugin<Project> {
 
     private fun configureForMPP(project: Project): Boolean = with(project) {
         if (!plugins.hasPlugin("org.jetbrains.kotlin.multiplatform")) {
-            slimLogger.info("Not configuring ${project.name} as MPP project because it does not have the Kotlin Multiplatform plugin.")
+            slimLogger.info(
+                "Not configuring ${project.name} as MPP project because it does not have the Kotlin Multiplatform plugin."
+            )
             return@with false
         }
         slimLogger.info("Configuring ${project.name} for Kotlin Multiplatform.")
 
         val mppExt = (kotlinExtension as KotlinMultiplatformExtension)
         // TODO: Support test targets as well.
-        mppExt.sourceSets.all {
+        mppExt.sourceSets.all { sourceSet ->
             slimLogger.info("Configuring sourceSet $name for Kotlin Multiplatform.")
 
-            createConfig(SLIM_CONFIGURATION_NAME.forSourceSet(this)) { configurations[compileOnlyConfigurationName].extendsFrom(this) }
-            createConfig(SLIM_API_CONFIGURATION_NAME.forSourceSet(this)) { configurations[apiConfigurationName].extendsFrom(this) }
+            createConfig(SLIM_CONFIGURATION_NAME.forSourceSet(sourceSet)) {
+                configurations[sourceSet.compileOnlyConfigurationName].extendsFrom(this)
+            }
+            createConfig(SLIM_API_CONFIGURATION_NAME.forSourceSet(sourceSet)) {
+                configurations[sourceSet.apiConfigurationName].extendsFrom(this)
+            }
         }
 
-        mppExt.targets.all {
-            if (platformType != KotlinPlatformType.jvm) {
+        mppExt.targets.all { target ->
+            if (target.platformType != KotlinPlatformType.jvm) {
                 slimLogger.info("Not configuring target $name for Kotlin Multiplatform because it is not a JVM target.")
                 return@all
             }
             slimLogger.info("Configuring target $name for Kotlin Multiplatform.")
 
-            compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
+            target.compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
                 listOf(configurations[set.slimConfigurationName], configurations[set.slimApiConfigurationName])
             }
 
-            val slimJarExt = extensions.create<SlimJarMultiplatformExtension>(SLIM_EXTENSION_NAME.forTarget(this), this)
-            createTask<SlimJarMultiplatformTask>(this, slimJarExt, this)
+            val slimJarExt = extensions.create<SlimJarMultiplatformExtension>(
+                SLIM_EXTENSION_NAME.forTarget(target),
+                this
+            )
+            createTask<SlimJarMultiplatformTask>(target, slimJarExt, this)
         }
 
         true
@@ -165,10 +173,16 @@ public class SlimJarPlugin : Plugin<Project> {
     private fun Project.createConfig(
         configurationName: String,
         configure: Configuration.() -> Unit = {}
-    ): NamedDomainObjectProvider<Configuration> = Option.catch { project.configurations.named(configurationName).also { config -> config.configure(configure) } }.getOrElse {
-        project.configurations.register(configurationName) {
-            isTransitive = true
-            configure()
+    ): NamedDomainObjectProvider<Configuration> = runCatching {
+        project.configurations.named(configurationName).also { config ->
+            config.configure(
+                configure
+            )
+        }
+    }.getOrElse {
+        project.configurations.register(configurationName) { config ->
+            config.isTransitive = true
+            config.configure()
         }
     }
 
@@ -189,9 +203,9 @@ public class SlimJarPlugin : Plugin<Project> {
         tasks.targetTask<ShadowJar>(target, "shadowJar") {
             doFirst {
                 extension.relocations.get().forEach { rule ->
-                    relocate(rule.originalPackagePattern, rule.relocatedPackagePattern) {
-                        rule.inclusions.forEach { include(it) }
-                        rule.exclusions.forEach { exclude(it) }
+                    relocate(rule.originalPackagePattern(), rule.relocatedPackagePattern()) {
+                        rule.inclusions().forEach { include(it) }
+                        rule.exclusions().forEach { exclude(it) }
                     }
                 }
             }
