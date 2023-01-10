@@ -21,17 +21,22 @@ import javax.inject.Inject
 public open class SlimJarMultiplatformTask @Inject constructor(
     @Transient private val target: KotlinTarget
 ) : SlimJarTask() {
-    final override val outputDirectory: File = project.buildDir.resolve("generated/slimjar/${target.name}").also(File::mkdirs)
+    final override val outputDirectory: File = project.buildDir
+        .resolve("generated/slimjar/${target.name}").also(File::mkdirs)
 
     @Transient
     final override val slimJarExtension: SlimJarExtension = target.slimJar
 
     @Transient
-    final override val slimjarConfigurations: SetProperty<Configuration> = project.objects.setProperty<Configuration>().convention(
-        target.compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
-            listOf(target.project.configurations[set.slimConfigurationName], target.project.configurations[set.slimApiConfigurationName])
-        }
-    ).also(SetProperty<*>::disallowChanges)
+    final override val slimjarConfigurations: SetProperty<Configuration> = project.objects
+        .setProperty<Configuration>().convention(
+            target.compilations[KotlinCompilation.MAIN_COMPILATION_NAME].allKotlinSourceSets.flatMap { set ->
+                listOf(
+                    target.project.configurations[set.slimConfigurationName],
+                    target.project.configurations[set.slimApiConfigurationName]
+                )
+            }
+        ).also(SetProperty<*>::disallowChanges)
 
     init {
         group = TASK_GROUP

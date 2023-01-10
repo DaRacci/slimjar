@@ -47,10 +47,12 @@ public class RelocationConfig {
     }
 
     public fun include(vararg patterns: ExternalModuleDependencyFactory.DependencyNotationSupplier): RelocationConfig {
-        return include(*patterns.map { it.asProvider().get().module.toString() }.toTypedArray())
+        inclusions.addAll(patterns.map { it.asProvider().get().module.toString() }.toTypedArray())
+        return this
     }
 
     public fun exclude(vararg patterns: ExternalModuleDependencyFactory.DependencyNotationSupplier): RelocationConfig {
-        return exclude(*patterns.map { it.asProvider().get().module.toString() }.toTypedArray())
+        exclusions.addAll(patterns.map { it.asProvider().get().module.toString() }.toTypedArray())
+        return this
     }
 }

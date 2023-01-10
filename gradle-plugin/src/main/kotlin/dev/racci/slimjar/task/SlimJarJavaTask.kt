@@ -20,9 +20,12 @@ public open class SlimJarJavaTask @Inject constructor() : SlimJarTask() {
     @Transient public final override val slimJarExtension: SlimJarJavaExtension = project.extensions.getByType()
 
     @Transient
-    public final override val slimjarConfigurations: SetProperty<Configuration> = project.objects.setProperty<Configuration>()
-        .convention(arrayOf(SLIM_CONFIGURATION_NAME, SLIM_API_CONFIGURATION_NAME).mapNotNull { project.configurations.findByName(it.get()) })
-        .also(SetProperty<*>::disallowChanges)
+    public final override val slimjarConfigurations: SetProperty<Configuration> = project.objects
+        .setProperty<Configuration>().convention(
+            arrayOf(SLIM_CONFIGURATION_NAME, SLIM_API_CONFIGURATION_NAME).mapNotNull {
+                project.configurations.findByName(it.get())
+            }
+        ).also(SetProperty<*>::disallowChanges)
 
     init {
         group = TASK_GROUP
