@@ -130,7 +130,7 @@ public final class ReflectiveJarRelocatorFacadeFactory implements JarRelocatorFa
         final Dependency jarRelocator = new Dependency(
             Packages.fix("me#lucko"),
             "jar-relocator",
-            "1.5",
+            "1.6",
             null,
             Arrays.asList(asm, asmCommons)
         );

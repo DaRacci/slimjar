@@ -1,18 +1,18 @@
 package dev.racci.slimjar.extensions
 
-import arrow.core.Option
+import dev.racci.slimjar.data.Targetable
+import dev.racci.slimjar.extension.SlimJarExtension
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_API_CONFIGURATION_NAME
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_CONFIGURATION_NAME
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_EXTENSION_NAME
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_JAR_TASK_NAME
-import dev.racci.slimjar.data.Targetable
-import dev.racci.slimjar.extension.SlimJarExtension
 import io.github.slimjar.task.SlimJarTask
 import org.gradle.api.Action
 import org.gradle.api.Named
 import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
@@ -58,13 +58,17 @@ public inline fun <reified T : Task> KotlinTarget.targetTask(
     noinline configure: T.() -> Unit = {}
 ): TaskProvider<T> = targetTask(commonTask.get(), configure)
 
-public inline fun <reified T : Task> KotlinTarget.nullableTargetTask(taskName: String): TaskProvider<T>? = runCatching { targetTask<T>(taskName) }.getOrNull()
+public inline fun <reified T : Task> KotlinTarget.nullableTargetTask(taskName: String): TaskProvider<T>? = runCatching {
+    targetTask<T>(
+        taskName
+    )
+}.getOrNull()
 
-public val KotlinSourceSet.slimConfiguration: Option<Configuration>
-    get() = Option.fromNullable(project().configurations.findByName(slimConfigurationName))
+public val KotlinSourceSet.slimConfiguration: Provider<Configuration>
+    get() = with(project()) { provider { configurations.findByName(slimConfigurationName) } }
 
-public val KotlinSourceSet.slimApiConfiguration: Option<Configuration>
-    get() = Option.fromNullable(project().configurations.findByName(slimApiConfigurationName))
+public val KotlinSourceSet.slimApiConfiguration: Provider<Configuration>
+    get() = with(project()) { provider { configurations.findByName(slimApiConfigurationName) } }
 
 public val KotlinTarget.slimJarTaskName: String
     get() = SLIM_JAR_TASK_NAME.forTarget(this)
@@ -97,7 +101,11 @@ internal inline fun <reified T : Task> TaskContainer.targetTask(
     named: Named? = null,
     taskName: String,
     noinline configure: T.() -> Unit = {}
-): TaskProvider<T> = named(Targetable.prefixable(named, SourceSet.MAIN_SOURCE_SET_NAME, taskName), T::class).also { task -> task.configure(configure) }
+): TaskProvider<T> = named(Targetable.prefixable(named, SourceSet.MAIN_SOURCE_SET_NAME, taskName), T::class).also { task ->
+    task.configure(
+        configure
+    )
+}
 
 @PublishedApi
 internal fun maybePrefix(
@@ -106,7 +114,9 @@ internal fun maybePrefix(
     string: String
 ): String = if (named == null || named == mainName) {
     string
-} else "${named.replaceFirstChar(Char::lowercaseChar)}${string.capitalized()}"
+} else {
+    "${named.replaceFirstChar(Char::lowercaseChar)}${string.capitalized()}"
+}
 
 @PublishedApi
 internal fun maybePrefix(
