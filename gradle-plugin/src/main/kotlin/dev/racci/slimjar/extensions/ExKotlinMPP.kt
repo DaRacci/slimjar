@@ -1,5 +1,6 @@
 package dev.racci.slimjar.extensions
 
+import dev.racci.minix.gradle.ex.project
 import dev.racci.slimjar.data.Targetable
 import dev.racci.slimjar.extension.SlimJarExtension
 import io.github.slimjar.SlimJarPlugin.Companion.SLIM_API_CONFIGURATION_NAME
@@ -9,7 +10,6 @@ import io.github.slimjar.SlimJarPlugin.Companion.SLIM_JAR_TASK_NAME
 import io.github.slimjar.task.SlimJarTask
 import org.gradle.api.Action
 import org.gradle.api.Named
-import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
@@ -90,11 +90,6 @@ internal val KotlinSourceSet.slimConfigurationName: String
 @PublishedApi
 internal val KotlinSourceSet.slimApiConfigurationName: String
     get() = SLIM_API_CONFIGURATION_NAME.forSourceSet(this)
-
-@PublishedApi
-internal fun KotlinSourceSet.project(): Project {
-    return this::class.java.getDeclaredField("project").apply { isAccessible = true }.get(this) as Project
-}
 
 @PublishedApi
 internal inline fun <reified T : Task> TaskContainer.targetTask(
