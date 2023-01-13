@@ -30,7 +30,7 @@ public open class SlimJarJavaTask @Inject constructor() : SlimJarTask() {
     init {
         group = TASK_GROUP
         inputs.files(slimjarConfigurations)
-        outputs.files(outputDirectory)
+        outputs.dir(outputDirectory)
 
         dependsOn(project.tasks.targetedJarTask)
     }
