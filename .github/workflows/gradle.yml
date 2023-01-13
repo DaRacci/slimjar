@@ -5,6 +5,7 @@ on:
     branches: [ master ]
   pull_request:
     types: [ opened, edited ]
+
 jobs:
   validate:
     uses: ./.github/workflows/wrapper-validation.yml
@@ -24,6 +25,7 @@ jobs:
       - uses: gradle/gradle-build-action@v2
         with:
           arguments: clean :slimjar:build
+
   build-plugin:
     name: Build SlimJar Gradle Plugin
     runs-on: ubuntu-latest
