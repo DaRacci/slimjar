@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
@@ -158,7 +159,7 @@ public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
                     } ?: true
                 }.concurrentMap(this, 16) {
                     it.toString() to resolver.resolve(it).orElse(null)
-                }.onEach { result[it.first] = it.second }.collect()
+                }.filterNot { it.second == null }.onEach { result[it.first] = it.second }.collect()
         }
 
         preResolved.forEach { result.putIfAbsent(it.key, it.value) }
