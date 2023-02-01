@@ -53,6 +53,7 @@ import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.buffer
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNot
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.runBlocking
@@ -183,7 +184,7 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
 
                     false
                 }.map { (dep, result) -> dep to result.get() }.onEach { (dep, result) ->
-                    if (!extension.requireChecksum.get() || result.checksumURL != null) return@onEach
+                    if (!extension.requireChecksum.get() || result.checksumURL() != null) return@onEach
                     logger.warn("Failed to resolve checksum for dependency $dep")
                     error(
                         """
