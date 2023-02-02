@@ -28,6 +28,7 @@ import io.github.slimjar.SlimJarPlugin
 import io.github.slimjar.plugin.applyPlugins
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatCode
+import org.gradle.api.plugins.JavaBasePlugin
 import org.gradle.api.plugins.JavaLibraryPlugin
 import org.gradle.kotlin.dsl.apply
 import org.gradle.testfixtures.ProjectBuilder
@@ -38,6 +39,7 @@ import org.junit.jupiter.api.TestInstance
 class ConfigurationTest {
 
     private val project = ProjectBuilder.builder().build().also {
+        it.apply<JavaBasePlugin>()
         it.apply<JavaLibraryPlugin>()
         it.applyPlugins()
     }

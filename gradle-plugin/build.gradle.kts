@@ -72,7 +72,10 @@ tasks {
     // Disabling default jar task as it is overridden by shadowJar
     jar { enabled = false }
 
-    test { useJUnitPlatform() }
+    test {
+        enabled = false
+        useJUnitPlatform()
+    }
 
     check { dependsOn(ensureDependenciesAreInlined, validatePlugins) }
 

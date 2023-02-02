@@ -74,7 +74,7 @@ import java.net.URL
 import javax.inject.Inject
 
 @CacheableTask
-public abstract class SlimJarTask @Inject constructor(@Transient private val extension: SlimJarExtension) : DefaultTask() {
+public abstract class SlimJarTask @Inject constructor() : DefaultTask() {
 
     protected companion object {
         public const val TASK_GROUP: String = "slimJar"
@@ -152,7 +152,7 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
         val results = mutableMapOf<String, ResolutionResult>()
         // TODO: Cleanup this mess
         runBlocking(IO) {
-            val globalRepositoryEnquirer = extension.globalRepositories.map { repos ->
+            val globalRepositoryEnquirer = slimJarExtension.globalRepositories.map { repos ->
                 repos.map { repoString -> enquirerFactory.create(Repository(URL(repoString))) }
             }
 
@@ -172,7 +172,7 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
                     if (!result.isEmpty) return@filter true
 
                     logger.warn("Failed to resolve dependency $dep")
-                    if (extension.requirePreResolve.get()) {
+                    if (slimJarExtension.requirePreResolve.get()) {
                         error(
                             """
                             Failed to resolve dependency $dep during pre-resolve.
@@ -184,7 +184,7 @@ public abstract class SlimJarTask @Inject constructor(@Transient private val ext
 
                     false
                 }.map { (dep, result) -> dep to result.get() }.onEach { (dep, result) ->
-                    if (!extension.requireChecksum.get() || result.checksumURL() != null) return@onEach
+                    if (!slimJarExtension.requireChecksum.get() || result.checksumURL() != null) return@onEach
                     logger.warn("Failed to resolve checksum for dependency $dep")
                     error(
                         """
