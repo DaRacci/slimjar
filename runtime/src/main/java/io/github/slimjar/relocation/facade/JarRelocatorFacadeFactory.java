@@ -36,5 +36,5 @@ public interface JarRelocatorFacadeFactory {
         @NotNull final File input,
         @NotNull final File output,
         @NotNull final Collection<RelocationRule> relocationRules
-    ) throws IllegalAccessException, InstantiationException, InvocationTargetException;
+    );
 }

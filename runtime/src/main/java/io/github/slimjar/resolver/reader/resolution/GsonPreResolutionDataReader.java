@@ -18,7 +18,7 @@ public record GsonPreResolutionDataReader(
 
     @Override
     @Contract(pure = true)
-    public @NotNull Map<String, ResolutionResult> read(final @NotNull InputStream inputStream) throws IOException, ReflectiveOperationException {
+    public @NotNull Map<String, ResolutionResult> read(final @NotNull InputStream inputStream) throws ReflectiveOperationException {
         final InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
         final Type rawType = new TypeToken<Map<String, ResolutionResult>>(){}.rawType();
         return gsonFacade.fromJson(inputStreamReader, rawType);

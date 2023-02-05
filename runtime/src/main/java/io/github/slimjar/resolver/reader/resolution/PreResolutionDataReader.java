@@ -9,5 +9,5 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface PreResolutionDataReader {
-    @NotNull Map<@NotNull String, @NotNull ResolutionResult> read(@NotNull final InputStream inputStream) throws IOException, ReflectiveOperationException;
+    @NotNull Map<@NotNull String, @NotNull ResolutionResult> read(@NotNull final InputStream inputStream) throws ReflectiveOperationException;
 }

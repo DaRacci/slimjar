@@ -57,8 +57,6 @@ public final class JarFileRelocator implements Relocator {
             relocatorFacadeFactory.createFacade(input, output, relocations).run();
         } catch (final IOException err) {
             throw new RelocatorException("Unable to create new file during relocation.", err);
-        } catch (final IllegalAccessException | InstantiationException | InvocationTargetException err) {
-            throw new RelocatorException("Unable to create relocator facade.", err);
         }
     }
 }
