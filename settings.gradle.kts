@@ -2,7 +2,7 @@ enableFeaturePreview("VERSION_CATALOGS")
 
 rootProject.name = "slimjar"
 
-include("slimjar", "gradle-plugin", "loader-agent")
+include("runtime", "gradle-plugin", "loader-agent")
 
 pluginManagement {
     repositories {

@@ -1,5 +1,3 @@
-// Workaround for (https://youtrack.jetbrains.com/issue/KTIJ-19369)
-@Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     `maven-publish`
 }

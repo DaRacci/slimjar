@@ -21,7 +21,7 @@ configurations {
 
 @Suppress("UnstableApiUsage")
 dependencies {
-    shadowImplementation(project(":slimjar"))
+    shadowImplementation(project(":runtime"))
     shadowImplementation("com.google.code.gson:gson:2.10")
     shadowImplementation(libs.kotlinx.coroutines)
 
