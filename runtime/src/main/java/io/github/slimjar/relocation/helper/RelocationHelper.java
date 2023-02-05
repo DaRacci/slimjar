@@ -28,7 +28,6 @@ import io.github.slimjar.resolver.data.Dependency;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
 
 public interface RelocationHelper {
     @NotNull File relocate(

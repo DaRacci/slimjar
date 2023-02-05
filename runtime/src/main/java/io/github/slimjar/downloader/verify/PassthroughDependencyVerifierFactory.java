@@ -28,7 +28,6 @@ import io.github.slimjar.resolver.DependencyResolver;
 import io.github.slimjar.resolver.data.Dependency;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Optional;

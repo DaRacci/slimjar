@@ -24,34 +24,24 @@
 
 package io.github.slimjar.injector.helper;
 
-import io.github.slimjar.downloader.DependencyDownloader;
 import io.github.slimjar.downloader.DependencyDownloaderFactory;
 import io.github.slimjar.downloader.output.DependencyOutputWriterFactory;
-import io.github.slimjar.downloader.output.OutputWriterFactory;
 import io.github.slimjar.downloader.strategy.FilePathStrategy;
 import io.github.slimjar.downloader.verify.DependencyVerifierFactory;
 import io.github.slimjar.exceptions.InjectorException;
 import io.github.slimjar.injector.DependencyInjectorFactory;
-import io.github.slimjar.relocation.Relocator;
 import io.github.slimjar.relocation.RelocatorFactory;
-import io.github.slimjar.relocation.helper.RelocationHelper;
 import io.github.slimjar.relocation.helper.RelocationHelperFactory;
-import io.github.slimjar.resolver.DependencyResolver;
 import io.github.slimjar.resolver.DependencyResolverFactory;
 import io.github.slimjar.resolver.ResolutionResult;
 import io.github.slimjar.resolver.data.DependencyData;
-import io.github.slimjar.resolver.data.Repository;
 import io.github.slimjar.resolver.enquirer.RepositoryEnquirerFactory;
 import io.github.slimjar.resolver.mirrors.MirrorSelector;
 import io.github.slimjar.resolver.reader.dependency.DependencyDataProviderFactory;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collection;
 import java.util.Map;
 
 public final class InjectionHelperFactory {

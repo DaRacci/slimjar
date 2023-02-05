@@ -28,7 +28,6 @@ import io.github.slimjar.exceptions.VerificationException;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.io.IOException;
 
 @FunctionalInterface
 public interface ChecksumCalculator {
