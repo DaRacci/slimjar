@@ -122,7 +122,7 @@ public abstract class ApplicationBuilder {
     public static @NotNull ApplicationBuilder isolated(
         @NotNull final String name,
         @NotNull final IsolationConfiguration config,
-        @Nullable Object... args
+        @NotNull Object... args
     ) {
         return new IsolatedApplicationBuilder(name, config, args);
     }
@@ -285,8 +285,8 @@ public abstract class ApplicationBuilder {
 
     /**
      *
-     * @param downloaderFactory
-     * @return
+     * @param downloaderFactory Factory that produces a DependencyDownloader
+     * @return <code>this</code>
      */
     @Contract(value = "_ -> this", mutates = "this")
     public final @NotNull ApplicationBuilder downloaderFactory(@NotNull final DependencyDownloaderFactory downloaderFactory) {
