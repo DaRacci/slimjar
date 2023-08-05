@@ -110,6 +110,7 @@ public abstract class ApplicationBuilder {
     private DependencyVerifierFactory verifierFactory;
     private MirrorSelector mirrorSelector;
     private ProcessLogger logger;
+    private URL jarURL = VerifyingRelocationHelperFactory.class.getProtectionDomain().getCodeSource().getLocation();
 
     /**
      * Generate a application builder for an application with given name.
@@ -295,6 +296,11 @@ public abstract class ApplicationBuilder {
         return this;
     }
 
+    public final ApplicationBuilder jarURL(final URL jarURL) {
+        this.jarURL = jarURL;
+        return this;
+    }
+
     protected final String getApplicationName() {
         return applicationName;
     }
@@ -357,7 +363,7 @@ public abstract class ApplicationBuilder {
             final FileChecksumCalculator checksumCalculator = new FileChecksumCalculator("SHA-256");
             final FilePathStrategy pathStrategy = FilePathStrategy.createRelocationStrategy(getDownloadDirectoryPath().toFile(), getApplicationName());
             final MetaMediatorFactory mediatorFactory = new FlatFileMetaMediatorFactory();
-            this.relocationHelperFactory = new VerifyingRelocationHelperFactory(checksumCalculator, pathStrategy, mediatorFactory);
+            this.relocationHelperFactory = new VerifyingRelocationHelperFactory(checksumCalculator, pathStrategy, mediatorFactory, jarURL);
         }
         return relocationHelperFactory;
     }

@@ -36,7 +36,6 @@ import java.net.URL;
 import java.security.NoSuchAlgorithmException;
 
 public class VerifyingRelocationHelperFactory implements RelocationHelperFactory {
-    private static final URL JAR_URL = VerifyingRelocationHelperFactory.class.getProtectionDomain().getCodeSource().getLocation();
 
     private final FilePathStrategy relocationFilePathStrategy;
     private final MetaMediatorFactory mediatorFactory;
@@ -48,8 +47,8 @@ public class VerifyingRelocationHelperFactory implements RelocationHelperFactory
         this.selfHash = selfHash;
     }
 
-    public VerifyingRelocationHelperFactory(final FileChecksumCalculator calculator, final FilePathStrategy relocationFilePathStrategy, final MetaMediatorFactory mediatorFactory) throws URISyntaxException, IOException, InterruptedException {
-        this(calculator.calculate(new File(JAR_URL.toURI())), relocationFilePathStrategy, mediatorFactory);
+    public VerifyingRelocationHelperFactory(final FileChecksumCalculator calculator, final FilePathStrategy relocationFilePathStrategy, final MetaMediatorFactory mediatorFactory, URL jarURL) throws URISyntaxException, IOException, InterruptedException {
+        this(calculator.calculate(new File(jarURL.toURI())), relocationFilePathStrategy, mediatorFactory);
     }
 
     @Override
