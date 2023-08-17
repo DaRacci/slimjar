@@ -6,10 +6,7 @@ import org.gradle.api.tasks.TaskContainer
 import org.gradle.kotlin.dsl.getByType
 
 internal val TaskContainer.targetedJarTask: Task get() {
-    return findByName("reobfJar")
-        ?: findByName("shadowJar")
-        ?: findByName("jar")
-        ?: error("No jar task found")
+    return findByName("jar") ?: error("No jar task found")
 }
 
 internal val Project.slimExtension: SlimJarExtension get() = extensions.getByType()
