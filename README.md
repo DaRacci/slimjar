@@ -1,3 +1,10 @@
+<h1 align="center"><p style="color:orange;">Archive Notice</p></h1>
+As I no longer do any jvm related coding I do not maintain this anymore.
+
+See [this fork](https://github.com/CrazyDev05/slimjar) for an maintained fork.
+
+---
+
 <h1 align="center">Slim Jar</h1>
 <h3 align="center">Runtime Dependency Management</h3>
   <div align="center">
